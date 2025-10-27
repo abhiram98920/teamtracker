@@ -1,0 +1,3639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QA Team Dashboard</title>
+    <link rel="icon" type="image/png" href="images/fav.png">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --background-color: #1a2526;
+            --widget-background: #2e3f52;
+            --text-color: #f5f5f5;
+            --shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+            --border-radius: 6px;
+            --light-background: #f5f5f5;
+            --light-widget: #ffffff;
+            --light-text: #333;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .light-theme {
+            --background-color: var(--light-background);
+            --widget-background: var(--light-widget);
+            --text-color: var(--light-text);
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: var(--background-color);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            transition: width 0.3s;
+        }
+
+        .sidebar.collapsed {
+            width: 60px;
+        }
+
+        .sidebar.collapsed .sidebar-item .text {
+            display: none;
+        }
+
+        .sidebar.collapsed .sidebar-item {
+            justify-content: center;
+            padding: 14px;
+        }
+
+        .sidebar-item {
+            padding: 14px 18px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            border-radius: var(--border-radius);
+            transition: background-color 0.3s;
+            color: var(--text-color);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-item .icon {
+            font-size: 18px;
+            min-width: 24px;
+            text-align: center;
+        }
+
+        .sidebar-item .text {
+            flex: 1;
+        }
+
+        .sidebar-item:hover,
+        .sidebar-item.active {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+
+        .sidebar-toggle {
+            font-size: 20px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            color: var(--text-color);
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+        }
+
+        .breadcrumbs {
+            margin-bottom: 15px;
+            font-size: 12px;
+            color: var(--secondary-color);
+        }
+
+        .breadcrumbs a {
+            color: var(--primary-color);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 25px;
+            background-color: var(--widget-background);
+            box-shadow: var(--shadow);
+            margin-bottom: 25px;
+            border-radius: var(--border-radius);
+        }
+
+        .header-logo {
+            height: 40px;
+            width: auto;
+            margin-right: 15px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 14px;
+        }
+
+        .user-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 12px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 12px;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 12px;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+
+        .loader-container {
+            --uib-size: 40px;
+            --uib-color: white;
+            --uib-speed: .9s;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            align-items: center;
+            justify-content: flex-start;
+            height: var(--uib-size);
+            width: var(--uib-size);
+            animation: rotate calc(var(--uib-speed) * 3) linear infinite;
+            z-index: 1002;
+        }
+
+        .dot {
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100%;
+            width: 100%;
+        }
+
+        .dot::before {
+            content: '';
+            height: 20%;
+            width: 20%;
+            border-radius: 50%;
+            background-color: var(--uib-color);
+            animation: oscillate var(--uib-speed) ease-in-out infinite alternate;
+        }
+
+        .dot:nth-child(1)::before { transform: translateX(calc(var(--uib-size) / 2 - var(--uib-size) / 5 / 2)); }
+        .dot:nth-child(2) { transform: rotate(45deg); }
+        .dot:nth-child(2)::before { transform: translateX(calc(var(--uib-size) / 2 - var(--uib-size) / 5 / 2)); animation-delay: calc(var(--uib-speed) * -0.125); }
+        .dot:nth-child(3) { transform: rotate(90deg); }
+        .dot:nth-child(3)::before { transform: translateX(calc(var(--uib-size) / 2 - var(--uib-size) / 5 / 2)); animation-delay: calc(var(--uib-speed) * -0.25); }
+        .dot:nth-child(4) { transform: rotate(135deg); }
+        .dot:nth-child(4)::before { transform: translateX(calc(var(--uib-size) / 2 - var(--uib-size) / 5 / 2)); animation-delay: calc(var(--uib-speed) * -0.375); }
+        .dot:nth-child(5) { transform: rotate(180deg); }
+        .dot:nth-child(5)::before { transform: translateX(calc(var(--uib-size) / 2 - var(--uib-size) / 5 / 2)); animation-delay: calc(var(--uib-speed) * -0.5); }
+        .dot:nth-child(6) { transform: rotate(225deg); }
+        .dot:nth-child(6)::before { transform: translateX(calc(var(--uib-size) / 2 - var(--uib-size) / 5 / 2)); animation-delay: calc(var(--uib-speed) * -0.625); }
+        .dot:nth-child(7) { transform: rotate(270deg); }
+        .dot:nth-child(7)::before { transform: translateX(calc(var(--uib-size) / 2 - var(--uib-size) / 5 / 2)); animation-delay: calc(var(--uib-speed) * -0.75); }
+        .dot:nth-child(8) { transform: rotate(315deg); }
+        .dot:nth-child(8)::before { transform: translateX(calc(var(--uib-size) / 2 - var(--uib-size) / 5 / 2)); animation-delay: calc(var(--uib-speed) * -0.875); }
+
+        @keyframes oscillate {
+            0% { transform: translateX(calc(var(--uib-size) / 2 - var(--uib-size) / 5 / 2)) scale(0); opacity: 0.25; }
+            100% { transform: translateX(0) scale(1); opacity: 1; }
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        .widget {
+            background-color: var(--widget-background);
+            padding: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 25px;
+        }
+
+        .widget h3 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: var(--text-color);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 12px;
+        }
+
+        .stats > div {
+            flex: 1;
+            text-align: center;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: var(--border-radius);
+        }
+
+        .stats-number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .stats-label {
+            font-size: 14px;
+            color: #a0a0a0;
+            font-weight: 500;
+        }
+
+        .stats-number.zero {
+            color: #ff4444;
+        }
+
+        .stats-number.active {
+            color: #007bff;
+        }
+
+        .stats-number.pending {
+            color: #ff4444;
+        }
+
+        .stats-number.completed {
+            color: #28a745;
+        }
+
+        .kanban-board {
+            display: flex;
+            gap: 25px;
+        }
+
+        .kanban-column {
+            flex: 1;
+            background-color: var(--widget-background);
+            padding: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            min-height: 300px;
+            min-width: 280px;
+            transition: background-color 0.2s ease;
+        }
+
+        .kanban-column.dragover {
+            background-color: rgba(0, 123, 255, 0.1);
+            border: 2px dashed var(--primary-color);
+        }
+
+        .kanban-column.todo { border-left: 4px solid #ffc107; }
+        .kanban-column.in-progress { border-left: 4px solid #fd7e14; }
+        .kanban-column.done { border-left: 4px solid #28a745; }
+
+        .kanban-column h3 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: var(--text-color);
+        }
+
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+            overflow-x: auto;
+            position: relative;
+            width: 100%;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: var(--widget-background);
+            box-shadow: var(--shadow);
+            border-radius: var(--border-radius);
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #444;
+            font-size: 12px;
+            color: var(--text-color);
+            white-space: nowrap;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: #fff;
+            font-weight: 600;
+            text-transform: uppercase;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            cursor: pointer;
+        }
+
+        th:hover {
+            background-color: #0056b3;
+        }
+
+        td {
+            background-color: #34495e;
+        }
+
+        tr:nth-child(even) td {
+            background-color: #3e5c76;
+        }
+
+        tr:hover td {
+            background-color: #4a6a8a;
+        }
+
+        td select, td input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 12px;
+            width: 100%;
+            background-color: #fff;
+            color: #333;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: var(--widget-background);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            width: 500px;
+            max-width: 90%;
+            color: var(--text-color);
+            position: relative;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 25px;
+            font-size: 24px;
+            color: var(--text-color);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 24px;
+            color: var(--text-color);
+        }
+
+        .notification {
+            display: none;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: var(--primary-color);
+            color: #fff;
+            padding: 12px 25px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            font-size: 14px;
+            z-index: 1001;
+        }
+
+        .error-notification {
+            background-color: #dc3545;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            font-size: 14px;
+            color: #a0a0a0;
+            font-weight: 500;
+        }
+
+        .form-group label.required::after {
+            content: '*';
+            color: #ff4444;
+            margin-left: 4px;
+        }
+
+        input, select, textarea {
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.2);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+
+        select {
+            appearance: none;
+            background: url('data:image/svg+xml;utf8,<svg fill="gray" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>') no-repeat right 10px center;
+            background-size: 16px;
+        }
+
+        .list-item {
+            background-color: var(--widget-background);
+            padding: 14px;
+            margin-bottom: 10px;
+            border-radius: var(--border-radius);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 15px;
+            font-size: 14px;
+            border: 1px solid var(--secondary-color);
+            cursor: move;
+            transition: all 0.2s ease;
+        }
+
+        .list-item:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .list-item.dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+
+        .list-item strong {
+            color: var(--text-color);
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .list-item small {
+            color: var(--secondary-color);
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .list-item > span {
+            flex: 1;
+            word-break: break-word;
+            padding-right: 10px;
+        }
+
+        .list-item > div {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .list-item a {
+            color: var(--primary-color);
+            text-decoration: none;
+            margin-left: 8px;
+        }
+
+        .list-item a:hover {
+            text-decoration: underline;
+        }
+
+        .list-item button {
+            white-space: nowrap;
+        }
+
+        h2 {
+            font-size: 24px;
+            margin-bottom: 25px;
+            color: var(--text-color);
+        }
+
+        .search-bar {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-bar input {
+            padding: 10px;
+            min-width: 250px;
+            flex: 1;
+        }
+
+        .search-bar select {
+            padding: 10px;
+            min-width: 200px;
+            background-color: var(--widget-background);
+            color: var(--text-color);
+            border: 1px solid var(--secondary-color);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+        }
+
+        .search-bar select:hover {
+            border-color: var(--primary-color);
+        }
+
+        .search-bar select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+
+        .search-bar select option {
+            background-color: var(--widget-background);
+            color: var(--text-color);
+            padding: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+            }
+
+            .sidebar.collapsed {
+                width: 60px;
+            }
+
+            .main-content {
+                padding: 15px;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .header-right {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .kanban-board {
+                flex-direction: column;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Loader for submit/create buttons */
+        .btn-loader {
+            position: relative;
+        }
+
+        .btn-loader .loader {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 16px;
+            height: 16px;
+            border: 2px solid #fff;
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .btn-loader.loading .loader {
+            display: block;
+        }
+
+        .btn-loader.loading button {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Add scrollable box for activity log */
+        #activity-log-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--secondary-color);
+            padding: 10px;
+            border-radius: var(--border-radius);
+            background-color: var(--widget-background);
+        }
+
+        .sidebar-logo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .sidebar-logo img {
+            width: 80%;
+            height: auto;
+            margin: 0 auto;
+        }
+
+        .sidebar.collapsed .sidebar-logo img.main-logo {
+            display: none;
+        }
+
+        .sidebar.collapsed .sidebar-logo img.mini-logo {
+            display: block;
+            width: 30px;
+            height: auto;
+            margin: 0 auto;
+        }
+
+        .sidebar-logo img.mini-logo {
+            display: none;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: #ff4444;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 12px;
+            display: none;
+        }
+        
+        .notification-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background-color: var(--widget-background);
+            border: 1px solid var(--secondary-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            width: 350px;
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            margin-top: 10px;
+        }
+        
+        .notification-item {
+            padding: 15px;
+            border-bottom: 1px solid var(--secondary-color);
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+        
+        .notification-item.unread {
+            background-color: rgba(0, 123, 255, 0.1);
+            position: relative;
+        }
+        
+        .notification-item.unread:before {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 6px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+        }
+        
+        .notification-item:hover {
+            background-color: rgba(0, 123, 255, 0.2);
+        }
+        
+        .notification-item .title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: var(--primary-color);
+        }
+        
+        .notification-item .content {
+            margin-bottom: 5px;
+        }
+        
+        .notification-item .timestamp {
+            color: var(--secondary-color);
+            font-size: 12px;
+        }
+
+        .notification-details {
+            padding: 15px;
+        }
+
+        .notification-details .header {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        .notification-details .content {
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .notification-details .timestamp {
+            color: var(--secondary-color);
+            font-size: 12px;
+        }
+
+        .notification-details .actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Add these styles to your existing CSS */
+        .bug-count-section {
+            margin-bottom: 20px;
+        }
+
+        .bug-count-section h3 {
+            margin-bottom: 15px;
+            color: var(--text-primary);
+        }
+
+        .bug-inputs {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .bug-input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .bug-input-group label {
+            min-width: 80px;
+            color: var(--text-secondary);
+        }
+
+        .bug-input-group input {
+            width: 80px;
+            padding: 5px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--background-card);
+            color: var(--text-primary);
+        }
+
+        .bug-total {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: var(--background-hover);
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        .bug-total label {
+            color: var(--text-secondary);
+        }
+
+        .bug-total span {
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        /* Add these table-specific styles */
+        .table-header {
+            padding: 20px;
+            background: var(--background-card);
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .sort-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .sort-dropdown {
+            width: 100%;
+            padding: 10px;
+            background: var(--background-main);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .table-container {
+            background: var(--background-card);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .projects-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .projects-table th {
+            background: #0066ff;
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 500;
+        }
+
+        .projects-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .projects-table tr:hover {
+            background: var(--background-hover);
+        }
+
+        .bug-count-input {
+            width: 80px;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: white;
+            color: var(--text-primary);
+            text-align: center;
+        }
+
+        .status-completed {
+            color: #28a745;
+        }
+
+        .status-in-progress {
+            color: #ffc107;
+        }
+
+        .reject-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .reject-btn:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" style="display: none;">
+        <div class="sidebar">
+            <div class="sidebar-toggle">☰</div>
+            <div class="sidebar-logo">
+                <img src="images/logo.png" alt="QA Dashboard Logo" class="main-logo">
+                <img src="images/Minilogo.png" alt="QA Dashboard Mini Logo" class="mini-logo">
+            </div>
+            <div class="sidebar-item active" data-tab="dashboard">
+                <span class="icon">📊</span>
+                <span class="text">Dashboard</span>
+            </div>
+            <div class="sidebar-item" data-tab="daily-standup">
+                <span class="icon">📅</span>
+                <span class="text">Daily Standup</span>
+            </div>
+            <div class="sidebar-item" data-tab="kanban-board">
+                <span class="icon">📋</span>
+                <span class="text">Scrum Board</span>
+            </div>
+            <div class="sidebar-item" data-tab="project-management">
+                <span class="icon">🏗️</span>
+                <span class="text">Projects</span>
+            </div>
+            <div class="sidebar-item" data-tab="project-overview">
+                <span class="icon">🔍</span>
+                <span class="text">Project Overview</span>
+            </div>
+            <div class="sidebar-item" data-tab="approved-projects">
+                <span class="icon">✅</span>
+                <span class="text">Approved Projects</span>
+            </div>
+            <div class="sidebar-item" data-tab="rejected-projects">
+                <span class="icon">❌</span>
+                <span class="text">Rejected Projects</span>
+            </div>
+            <div class="sidebar-item" data-tab="project-types">
+                <span class="icon">📑</span>
+                <span class="text">Project Types</span>
+            </div>
+            <div class="sidebar-item" data-tab="qa-report">
+                <span class="icon">📈</span>
+                <span class="text">QA Report</span>
+            </div>
+            <div class="sidebar-item" data-tab="activity-log">
+                <span class="icon">🕒</span>
+                <span class="text">Activity Log</span>
+            </div>
+            <div class="sidebar-item" data-tab="profile">
+                <span class="icon">👤</span>
+                <span class="text">Profile</span>
+            </div>
+            <div class="sidebar-item" data-tab="user-management">
+                <span class="icon">👥</span>
+                <span class="text">User Management</span>
+            </div>
+            <div class="sidebar-item" data-tab="assign-roles">
+                <span class="icon">🔑</span>
+                <span class="text">Assign Roles</span>
+            </div>
+            <div class="sidebar-item" data-tab="testing-phases">
+                <span class="icon">🧪</span>
+                <span class="text">Testing Phases</span>
+            </div>
+        </div>
+        <div class="main-content">
+            <div class="header">
+                <div class="header-left">
+                    <img src="images/logo.png" alt="QA Dashboard Logo" class="header-logo">
+                    <span style="font-size: 16px; font-weight: bold;">QA Team Dashboard</span>
+                </div>
+                <div class="header-right">
+                    <div class="user-avatar" id="user-avatar"></div>
+                    <span id="user-name"></span>
+                    <div style="position: relative;">
+                        <button class="btn-primary" id="notification-btn" onclick="toggleNotifications()">
+                            Notifications
+                            <span class="notification-badge" id="notification-badge">0</span>
+                        </button>
+                        <div class="notification-dropdown" id="notification-dropdown"></div>
+                    </div>
+                    <button class="btn-primary" id="theme-toggle">Toggle Theme</button>
+                    <button class="btn-primary" id="logout-btn">Logout</button>
+                </div>
+            </div>
+            <div class="breadcrumbs" id="breadcrumbs"></div>
+            <div id="notification" class="notification"></div>
+            <div id="loader" class="loader-container">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+            <div id="dashboard" class="tab-pane active">
+                <h2>Welcome, <span id="welcome-user"></span>!</h2>
+                <div id="dashboard-content" class="stats-grid"></div>
+                <canvas id="project-trends-chart" style="margin-top: 25px;"></canvas>
+                <div style="margin-top: 25px;">
+                    <button class="btn-primary" onclick="showProjectForm()" style="display: none;" id="add-project-btn">Add Project</button>
+                    <button class="btn-primary" onclick="switchTab('qa-report')">View Reports</button>
+                </div>
+            </div>
+            <div id="daily-standup" class="tab-pane">
+                <h2>Daily Standup</h2>
+                <form id="standup-form">
+                    <div class="form-group">
+                        <label for="standup-yesterday" class="required">Yesterday's Work</label>
+                        <input type="text" id="standup-yesterday" placeholder="What did you do yesterday?" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="standup-today" class="required">Today's Plan</label>
+                        <input type="text" id="standup-today" placeholder="What will you do today?" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="standup-blockers">Blockers</label>
+                        <input type="text" id="standup-blockers" placeholder="Any blockers?">
+                    </div>
+                    <button type="submit" class="btn-primary">Submit Standup</button>
+                </form>
+                <div class="widget" style="margin-top: 25px;">
+                    <h3>Recent Standups (Last 2 Weeks)</h3>
+                    <div class="table-container">
+                        <table id="standup-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>User</th>
+                                    <th>Yesterday's Work</th>
+                                    <th>Today's Plan</th>
+                                    <th>Blockers</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div id="kanban-board" class="tab-pane">
+                <h2>Scrum Board</h2>
+                <button class="btn-primary" onclick="showTaskForm()" style="margin-bottom: 25px;">Add Task</button>
+                <div class="kanban-board">
+                    <div class="kanban-column todo" ondrop="drop(event, 'To Do')" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+                        <h3>To Do</h3>
+                        <div id="to-do-tasks"></div>
+                    </div>
+                    <div class="kanban-column in-progress" ondrop="drop(event, 'In Progress')" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+                        <h3>In Progress</h3>
+                        <div id="in-progress-tasks"></div>
+                    </div>
+                    <div class="kanban-column done" ondrop="drop(event, 'Done')" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+                        <h3>Done</h3>
+                        <div id="done-tasks"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="project-management" class="tab-pane">
+                <h2>Projects</h2>
+                <button class="btn-primary" onclick="showProjectForm()" style="margin-bottom: 25px; display: none;" id="create-project-btn">Create Project</button>
+                <div id="projects-list"></div>
+            </div>
+            <div id="project-overview" class="tab-pane">
+                <div class="search-bar">
+                    <input type="text" id="project-search" placeholder="Search projects..." oninput="filterProjects()">
+                    <select id="html-sort" onchange="filterProjects()">
+                        <option value="">Sort HTML Bugs</option>
+                        <option value="high-to-low">HTML: High to Low (P0→P4)</option>
+                        <option value="low-to-high">HTML: Low to High (P4→P0)</option>
+                    </select>
+                    <select id="functional-sort" onchange="filterProjects()">
+                        <option value="">Sort Functional Bugs</option>
+                        <option value="high-to-low">Functional: High to Low (P0→P4)</option>
+                        <option value="low-to-high">Functional: Low to High (P4→P0)</option>
+                    </select>
+                </div>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Project Name</th>
+                                <th>Phase</th>
+                                <th>QA Member</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Status</th>
+                                <th>HTML Bugs</th>
+                                <th>Functional Bugs</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="project-overview-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="approved-projects" class="tab-pane">
+                <h2>Approved Projects</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Project Name</th>
+                                <th>Assigned QA</th>
+                                <th>Project Type</th>
+                                <th>Current Phase</th>
+                                <th>KT Received</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Status</th>
+                                <th>Approved Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="approved-projects-table"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="rejected-projects" class="tab-pane">
+                <h2>Rejected Projects</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Project Name</th>
+                                <th>Assigned QA</th>
+                                <th>Project Type</th>
+                                <th>Current Phase</th>
+                                <th>KT Received</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Status</th>
+                                <th>Rejection Date</th>
+                                <th>Reason</th>
+                                <th>Rejected By</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rejected-projects-table"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="project-types" class="tab-pane">
+                <h2>Project Types</h2>
+                <button class="btn-primary" onclick="showCategoryForm()" style="margin-bottom: 25px;">Add Category</button>
+                <div id="project-types-list"></div>
+            </div>
+            <div id="qa-report" class="tab-pane">
+                <h2>QA Report</h2>
+                <div class="filters" style="display: flex; gap: 15px; margin-bottom: 25px;">
+                    <input type="month" id="report-filter-from" placeholder="From Month">
+                    <input type="month" id="report-filter-to" placeholder="To Month">
+                    <select id="report-filter-qa">
+                        <option value="">All QAs</option>
+                    </select>
+                    <button class="btn-primary" onclick="renderReports()">Apply Filters</button>
+                    <button class="btn-primary" onclick="exportReport()">Export Report</button>
+                </div>
+                <div id="reports-list">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Project Name</th>
+                                    <th>QA</th>
+                                    <th>Type</th>
+                                    <th>Phase</th>
+                                    <th>Status</th>
+                                    <th>Total Bugs</th>
+                                    <th>Approved?</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div id="activity-log" class="tab-pane">
+                <h2>Activity Log</h2>
+                <div id="activity-log-list"></div>
+            </div>
+            <div id="profile" class="tab-pane">
+                <h2>Profile</h2>
+                <form id="profile-form">
+                    <div class="form-group">
+                        <label for="profile-name" class="required">Your Name</label>
+                        <input type="text" id="profile-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-email" class="required">Email</label>
+                        <input type="email" id="profile-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-password">New Password</label>
+                        <input type="password" id="profile-password" placeholder="Leave blank to keep current">
+                    </div>
+                    <button type="submit" class="btn-primary">Update Profile</button>
+                </form>
+            </div>
+            <div id="user-management" class="tab-pane">
+                <h2>User Management</h2>
+                <button class="btn-primary" onclick="showUserForm()" style="margin-bottom: 25px;">Add User</button>
+                <div class="search-bar">
+                    <input type="text" id="user-search" placeholder="Search users..." onkeyup="filterUsers()">
+                </div>
+                <div id="users-list"></div>
+                <div id="pagination-controls" style="margin-top: 15px;"></div>
+            </div>
+            <div id="assign-roles" class="tab-pane">
+                <h2>Assign Roles</h2>
+                <div id="roles-list"></div>
+            </div>
+            <div id="testing-phases" class="tab-pane">
+                <h2>Testing Phases</h2>
+                <button class="btn-primary" onclick="showPhaseForm()" style="margin-bottom: 25px;">Add Phase</button>
+                <div id="testing-phases-list"></div>
+            </div>
+        </div>
+    </div>
+    <div id="login-modal" class="modal" style="display: flex;">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeLoginModal()">×</span>
+            <h2>Login</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email" class="required">Email</label>
+                    <input type="email" id="login-email" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password" class="required">Password</label>
+                    <input type="password" id="login-password" placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="btn-primary">Login</button>
+            </form>
+        </div>
+    </div>
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal()">×</span>
+            <h2 id="modal-title"></h2>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+    <div id="email-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal()">×</span>
+            <h2>Email Draft</h2>
+            <form id="email-form">
+                <div class="form-group">
+                    <label for="email-to" class="required">To</label>
+                    <input type="email" id="email-to" required>
+                </div>
+                <div class="form-group">
+                    <label for="email-subject" class="required">Subject</label>
+                    <input type="text" id="email-subject" required>
+                </div>
+                <div class="form-group">
+                    <label for="email-body" class="required">Body</label>
+                    <textarea id="email-body" required></textarea>
+                </div>
+                <button type="submit" class="btn-primary">Send Email</button>
+            </form>
+        </div>
+    </div>
+    <div id="notification-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeNotificationModal()">×</span>
+            <h2>Notification Details</h2>
+            <div id="notification-details"></div>
+        </div>
+    </div>
+    <div id="bug-count-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Bug Count Details</h2>
+                <span class="close" onclick="closeBugCountModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="bug-count-section">
+                    <h3>HTML Bugs</h3>
+                    <div class="bug-inputs">
+                        <div class="bug-input-group">
+                            <label>P0 Bugs:</label>
+                            <input type="number" id="html-p0" min="0" value="0">
+                        </div>
+                        <div class="bug-input-group">
+                            <label>P1 Bugs:</label>
+                            <input type="number" id="html-p1" min="0" value="0">
+                        </div>
+                        <div class="bug-input-group">
+                            <label>P2 Bugs:</label>
+                            <input type="number" id="html-p2" min="0" value="0">
+                        </div>
+                        <div class="bug-input-group">
+                            <label>P3 Bugs:</label>
+                            <input type="number" id="html-p3" min="0" value="0">
+                        </div>
+                        <div class="bug-input-group">
+                            <label>P4 Bugs:</label>
+                            <input type="number" id="html-p4" min="0" value="0">
+                        </div>
+                    </div>
+                    <div class="bug-total">
+                        <label>Total HTML Bugs:</label>
+                        <span id="html-total">0</span>
+                    </div>
+                </div>
+                <div class="bug-count-section">
+                    <h3>Functional Bugs</h3>
+                    <div class="bug-inputs">
+                        <div class="bug-input-group">
+                            <label>P0 Bugs:</label>
+                            <input type="number" id="func-p0" min="0" value="0">
+                        </div>
+                        <div class="bug-input-group">
+                            <label>P1 Bugs:</label>
+                            <input type="number" id="func-p1" min="0" value="0">
+                        </div>
+                        <div class="bug-input-group">
+                            <label>P2 Bugs:</label>
+                            <input type="number" id="func-p2" min="0" value="0">
+                        </div>
+                        <div class="bug-input-group">
+                            <label>P3 Bugs:</label>
+                            <input type="number" id="func-p3" min="0" value="0">
+                        </div>
+                        <div class="bug-input-group">
+                            <label>P4 Bugs:</label>
+                            <input type="number" id="func-p4" min="0" value="0">
+                        </div>
+                    </div>
+                    <div class="bug-total">
+                        <label>Total Functional Bugs:</label>
+                        <span id="func-total">0</span>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-primary" onclick="saveBugCounts()">Done</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let state = {
+            currentUser: null,
+            users: JSON.parse(localStorage.getItem('users')) || [],
+            tasks: JSON.parse(localStorage.getItem('tasks')) || [],
+            projects: JSON.parse(localStorage.getItem('projects')) || [],
+            projectOverview: JSON.parse(localStorage.getItem('projectOverview')) || [],
+            approvedProjects: JSON.parse(localStorage.getItem('approvedProjects')) || [],
+            rejectedProjects: JSON.parse(localStorage.getItem('rejectedProjects')) || [],
+            activityLog: JSON.parse(localStorage.getItem('activityLog')) || [],
+            standupEntries: JSON.parse(localStorage.getItem('standupEntries')) || [],
+            projectTypes: JSON.parse(localStorage.getItem('projectTypes')) || [],
+        };
+
+        // Initialize predefined users with unique IDs
+        if (!state.users || state.users.length === 0) {
+            state.users = [
+                { id: '1', name: 'Admin User', email: 'qaadmin@intersmart.in', password: 'admin123', role: 'Admin' },
+                { id: '2', name: 'Abhiram', email: 'abhiram@intersmart.in', password: 'lead123', role: 'Team Lead' },
+                { id: '3', name: 'Aswathi', email: 'aswathi@intersmart.in', password: 'qa123', role: 'QA Member' },
+                { id: '4', name: 'Minnu', email: 'minnu@intersmart.in', password: 'qa123', role: 'QA Member' }
+            ];
+            localStorage.setItem('users', JSON.stringify(state.users));
+        }
+
+        function saveState(key, data) {
+            localStorage.setItem(key, JSON.stringify(data));
+            state[key] = data;
+        }
+
+        function logActivity(action) {
+            state.activityLog.unshift({
+                id: Date.now().toString(),
+                action,
+                user: state.currentUser ? state.currentUser.name : 'Unknown',
+                timestamp: Date.now()
+            });
+            saveState('activityLog', state.activityLog.slice(0, 100));
+        }
+
+        function login(e) {
+            e.preventDefault();
+            
+            // Get form values
+            const email = document.getElementById('login-email').value.trim().toLowerCase();
+            const password = document.getElementById('login-password').value;
+
+            // Validate empty fields
+            if (!email || !password) {
+                showNotification('Please enter both email and password', 3000, true);
+                return;
+            }
+
+            // Find user
+            const user = state.users.find(u => u.email.toLowerCase() === email && u.password === password);
+            
+            if (!user) {
+                showNotification('Invalid email or password', 3000, true);
+                return;
+            }
+
+            // Set current user
+            state.currentUser = user;
+            localStorage.setItem('currentUser', JSON.stringify(user));
+
+            // Update UI
+            document.getElementById('login-modal').style.display = 'none';
+            document.querySelector('.container').style.display = 'flex';
+            document.getElementById('welcome-user').textContent = user.name;
+            
+            // Initialize dashboard
+            updateUserAvatar();
+            setupSidebar();
+            renderAll();
+            switchTab('dashboard');
+
+            // Reset form and show success
+            document.getElementById('login-form').reset();
+            showNotification('Login successful!');
+            logActivity('User logged in');
+        }
+
+        function logout() {
+            // Clear state
+            state.currentUser = null;
+            localStorage.removeItem('currentUser');
+
+            // Reset UI
+            document.getElementById('welcome-user').textContent = '';
+            document.getElementById('user-avatar').textContent = '';
+            document.getElementById('user-name').textContent = '';
+            
+            // Hide container and show login modal
+            document.querySelector('.container').style.display = 'none';
+            document.getElementById('login-modal').style.display = 'flex';
+            
+            // Reset login form
+            document.getElementById('login-form').reset();
+            
+            // Log activity and show notification
+            logActivity('User logged out');
+            showNotification('Logged out successfully');
+        }
+
+        function renderStandup() {
+            const tbody = document.querySelector('#standup-table tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            let filteredEntries = state.standupEntries;
+            if (state.currentUser.role === 'QA Member') {
+                filteredEntries = filteredEntries.filter(entry => entry.userId === state.currentUser.id);
+            }
+            filteredEntries.forEach(entry => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${entry.date}</td>
+                    <td>${entry.userName}</td>
+                    <td>${entry.yesterday}</td>
+                    <td>${entry.today}</td>
+                    <td>${entry.blockers || 'None'}</td>
+                    <td>
+                        ${state.currentUser.id === entry.userId ? `
+                            <button class="btn-primary" onclick="editStandup('${entry.id}')">Edit</button>
+                            <button class="btn-danger" onclick="deleteStandup('${entry.id}')">Delete</button>
+                        ` : ''}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function editStandup(id) {
+            const entry = state.standupEntries.find(e => e.id === id);
+            if (!entry) return;
+            const content = `
+                <form id="edit-standup-form">
+                    <div class="form-group">
+                        <label for="edit-yesterday" class="required">Yesterday's Work</label>
+                        <input type="text" id="edit-yesterday" value="${entry.yesterday}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-today" class="required">Today's Plan</label>
+                        <input type="text" id="edit-today" value="${entry.today}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-blockers">Blockers</label>
+                        <input type="text" id="edit-blockers" value="${entry.blockers || ''}">
+                    </div>
+                    <button type="submit" class="btn-primary">Update Standup</button>
+                </form>
+            `;
+            showModal('Edit Standup', content);
+            document.getElementById('edit-standup-form').onsubmit = (e) => {
+                e.preventDefault();
+                const yesterday = document.getElementById('edit-yesterday').value.trim();
+                const today = document.getElementById('edit-today').value.trim();
+                const blockers = document.getElementById('edit-blockers').value.trim();
+                if (!yesterday || !today) {
+                    showNotification("Yesterday's work and today's plan are required", 3000, true);
+                    return;
+                }
+                const index = state.standupEntries.findIndex(e => e.id === id);
+                state.standupEntries[index] = { ...entry, yesterday, today, blockers };
+                saveState('standupEntries', state.standupEntries);
+                logActivity('Updated standup entry');
+                closeModal();
+                showNotification('Standup updated successfully');
+                renderStandup();
+            };
+        }
+
+        function deleteStandup(id) {
+            state.standupEntries = state.standupEntries.filter(e => e.id !== id);
+            saveState('standupEntries', state.standupEntries);
+            logActivity('Deleted standup entry');
+            showNotification('Standup deleted successfully');
+            renderStandup();
+        }
+
+        function showTaskForm(taskId = null) {
+            const task = taskId ? state.tasks.find(t => t.id === taskId) : null;
+            const content = `
+                <form id="task-form">
+                    <div class="form-group">
+                        <label for="task-title" class="required">Task Title</label>
+                        <input type="text" id="task-title" value="${task ? task.title : ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="task-project" class="required">Project</label>
+                        <select id="task-project" required>
+                            <option value="">Select Project</option>
+                            ${state.projects.map(project => `
+                                <option value="${project.id}" ${task && task.projectId === project.id ? 'selected' : ''}>${project.name}</option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="task-phase" class="required">Phase</label>
+                        <select id="task-phase" required>
+                            <option value="">Select Phase</option>
+                            <option value="HTML Comparison" ${task && task.phase === 'HTML Comparison' ? 'selected' : ''}>HTML Comparison</option>
+                            <option value="Dev Testing" ${task && task.phase === 'Dev Testing' ? 'selected' : ''}>Dev Testing</option>
+                            <option value="Regression" ${task && task.phase === 'Regression' ? 'selected' : ''}>Regression</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="task-assignee">Assignee</label>
+                        <select id="task-assignee">
+                            <option value="">Unassigned</option>
+                            ${state.users.map(user => `
+                                <option value="${user.id}" ${task && task.assignee === user.id ? 'selected' : ''}>${user.name}</option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="task-status" class="required">Status</label>
+                        <select id="task-status" required>
+                            <option value="To Do" ${task && task.status === 'To Do' ? 'selected' : ''}>To Do</option>
+                            <option value="In Progress" ${task && task.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+                            <option value="Done" ${task && task.status === 'Done' ? 'selected' : ''}>Done</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary">${task ? 'Update' : 'Add'} Task</button>
+                </form>
+            `;
+            showModal(`${task ? 'Edit' : 'Add'} Task`, content);
+            document.getElementById('task-form').onsubmit = (e) => {
+                e.preventDefault();
+                const title = document.getElementById('task-title').value.trim();
+                const projectId = document.getElementById('task-project').value;
+                const phase = document.getElementById('task-phase').value;
+                const assignee = document.getElementById('task-assignee').value;
+                const status = document.getElementById('task-status').value;
+                if (!title || !projectId || !phase || !status) {
+                    showNotification('All fields are required', 3000, true);
+                    return;
+                }
+                if (task) {
+                    const index = state.tasks.findIndex(t => t.id === taskId);
+                    state.tasks[index] = { ...task, title, projectId, phase, assignee, status };
+                    logActivity(`Updated task: ${title}`);
+                } else {
+                    state.tasks.push({
+                        id: Date.now().toString(),
+                        title,
+                        projectId,
+                        phase,
+                        assignee,
+                        status,
+                        createdBy: state.currentUser.id,
+                        createdAt: Date.now()
+                    });
+                    logActivity(`Added task: ${title}`);
+                }
+                saveState('tasks', state.tasks);
+                closeModal();
+                showNotification('Task saved successfully');
+                renderTasks();
+            };
+        }
+
+        function renderTasks() {
+            const toDo = document.getElementById('to-do-tasks');
+            const inProgress = document.getElementById('in-progress-tasks');
+            const done = document.getElementById('done-tasks');
+            if (!toDo || !inProgress || !done) return;
+            toDo.innerHTML = inProgress.innerHTML = done.innerHTML = '';
+            
+            state.tasks.forEach(task => {
+                // Filter tasks based on user role and assignment
+                if (state.currentUser.role === 'QA Member' && task.assignee !== state.currentUser.id) return;
+                
+                const taskElement = document.createElement('div');
+                taskElement.className = 'list-item';
+                taskElement.draggable = true;
+                taskElement.ondragstart = (e) => drag(e, task.id);
+                taskElement.ondragend = (e) => {
+                    e.target.classList.remove('dragging');
+                };
+                
+                const project = state.projects.find(p => p.id === task.projectId);
+                const assignee = state.users.find(u => u.id === task.assignee);
+                
+                taskElement.innerHTML = `
+                    <span>
+                        <strong>${task.title}</strong>
+                        <br>
+                        <small>Project: ${project ? project.name : 'Unknown'}</small>
+                        <br>
+                        <small>Phase: ${task.phase}</small>
+                        <br>
+                        <small>Assigned to: ${assignee ? assignee.name : 'Unassigned'}</small>
+                    </span>
+                    <div>
+                        ${(state.currentUser.role === 'Admin' || state.currentUser.role === 'Team Lead') ? `
+                            <button class="btn-primary" onclick="showTaskForm('${task.id}')">Edit</button>
+                            <button class="btn-danger" onclick="deleteTask('${task.id}')">Delete</button>
+                        ` : ''}
+                    </div>
+                `;
+                
+                if (task.status === 'To Do') toDo.appendChild(taskElement);
+                else if (task.status === 'In Progress') inProgress.appendChild(taskElement);
+                else if (task.status === 'Done') done.appendChild(taskElement);
+            });
+        }
+
+        function drag(e, taskId) {
+            e.dataTransfer.setData('text/plain', taskId);
+            e.target.classList.add('dragging');
+        }
+
+        function allowDrop(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+
+        function dragEnter(e) {
+            e.preventDefault();
+            e.target.closest('.kanban-column')?.classList.add('dragover');
+        }
+
+        function dragLeave(e) {
+            e.preventDefault();
+            e.target.closest('.kanban-column')?.classList.remove('dragover');
+        }
+
+        function drop(e, status) {
+            e.preventDefault();
+            const column = e.target.closest('.kanban-column');
+            if (!column) return;
+            column.classList.remove('dragover');
+            
+            const taskId = e.dataTransfer.getData('text/plain');
+            const task = state.tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            // Check if user can move this task
+            if (state.currentUser.role === 'QA Member' && task.assignee !== state.currentUser.id) {
+                showNotification('You can only move tasks assigned to you', 3000, true);
+                return;
+            }
+
+            const index = state.tasks.findIndex(t => t.id === taskId);
+            state.tasks[index].status = status;
+
+            // Get the project from projects list
+            const project = state.projects.find(p => p.id === task.projectId);
+            if (!project) return;
+
+            // Find or create project overview entry
+            let projectOverview = state.projectOverview.find(p => p.projectId === task.projectId);
+            const currentDate = new Date().toISOString().split('T')[0];
+
+            if (!projectOverview) {
+                // Create new project overview entry
+                projectOverview = {
+                    projectId: task.projectId,
+                    projectName: project.name,
+                    projectType: project.category,
+                    qaId: task.assignee,
+                    currentPhase: task.phase || 'Not Started',
+                    ktReceived: 'No',
+                    startDate: status === 'In Progress' ? currentDate : '',
+                    endDate: status === 'Done' ? currentDate : '',
+                    status: status === 'In Progress' ? 'In Progress' : (status === 'Done' ? 'Completed' : 'Not Started'),
+                    totalBugs: 0,
+                    htmlBugs: 0,
+                    functionalBugs: 0,
+                    approvedForLive: 'No'
+                };
+                state.projectOverview.push(projectOverview);
+            } else {
+                // Update existing project overview entry
+                const index = state.projectOverview.findIndex(p => p.projectId === task.projectId);
+                if (status === 'In Progress' && projectOverview.status !== 'In Progress') {
+                    projectOverview.status = 'In Progress';
+                    projectOverview.startDate = projectOverview.startDate || currentDate;
+                } else if (status === 'Done') {
+                    projectOverview.status = 'Completed';
+                    projectOverview.endDate = currentDate;
+                }
+                
+                // Update QA assignment if not already assigned
+                if (!projectOverview.qaId && task.assignee) {
+                    projectOverview.qaId = task.assignee;
+                }
+                
+                // Update phase if it's changed
+                if (task.phase && task.phase !== projectOverview.currentPhase) {
+                    projectOverview.currentPhase = task.phase;
+                }
+                
+                state.projectOverview[index] = projectOverview;
+            }
+
+            logActivity(`Moved task "${task.title}" to ${status}`);
+            saveState('tasks', state.tasks);
+            saveState('projectOverview', state.projectOverview);
+            renderTasks();
+            filterProjects(); // Refresh project overview table
+        }
+
+        function deleteTask(taskId) {
+            const task = state.tasks.find(t => t.id === taskId);
+            if (!task) return;
+            if (state.currentUser.role === 'QA Member' && task.createdBy !== state.currentUser.id) {
+                showNotification('You cannot delete this task', 3000, true);
+                return;
+            }
+            state.tasks = state.tasks.filter(t => t.id !== taskId);
+            logActivity('Deleted task');
+            saveState('tasks', state.tasks);
+            showNotification('Task deleted successfully');
+            renderTasks();
+        }
+
+        function showProjectForm(projectId = null) {
+            if (state.currentUser.role === 'QA Member') {
+                showNotification('Only Admins or Team Leads can manage projects', 3000, true);
+                return;
+            }
+            
+            const project = projectId ? state.projects.find(p => p.id === projectId) : null;
+            const content = `
+                <form id="project-form">
+                    <div class="form-group">
+                        <label for="project-name" class="required">Project Name</label>
+                        <input type="text" id="project-name" value="${project ? project.name : ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="project-category" class="required">Project Category</label>
+                        <select id="project-category" required onchange="populateSubcategories()">
+                            <option value="">Select Category</option>
+                            ${state.projectTypes.map(category => `
+                                <option value="${category.name}" ${project && project.category === category.name ? 'selected' : ''}>${category.name}</option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="project-subcategory" class="required">Project Subcategory</label>
+                        <select id="project-subcategory" required>
+                            <option value="">Select Subcategory</option>
+                            ${project ? state.projectTypes.find(c => c.name === project.category)?.subcategories.map(sub => `
+                                <option value="${sub}" ${project.subcategory === sub ? 'selected' : ''}>${sub}</option>
+                            `).join('') : ''}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="project-link" class="required">GitLab/Bugtracker Link</label>
+                        <input type="url" id="project-link" value="${project ? project.link : ''}" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Create Project</button>
+                </form>
+            `;
+            showModal(`${project ? 'Edit' : 'Create'} Project`, content);
+
+            document.getElementById('project-form').onsubmit = (e) => {
+                e.preventDefault();
+                const name = document.getElementById('project-name').value.trim();
+                const category = document.getElementById('project-category').value;
+                const subcategory = document.getElementById('project-subcategory').value;
+                const link = document.getElementById('project-link').value.trim();
+
+                if (!name || !category || !subcategory || !link) {
+                    showNotification('All fields are required', 3000, true);
+                    return;
+                }
+
+                if (project) {
+                    const index = state.projects.findIndex(p => p.id === projectId);
+                    state.projects[index] = { ...project, name, category, subcategory, link };
+                    logActivity(`Updated project: ${name}`);
+                } else {
+                    state.projects.push({
+                        id: Date.now().toString(),
+                        name,
+                        category,
+                        subcategory,
+                        link,
+                        createdBy: state.currentUser.id,
+                        createdAt: Date.now()
+                    });
+                    logActivity(`Created project: ${name}`);
+                }
+
+                saveState('projects', state.projects);
+                closeModal();
+                showNotification('Project saved successfully');
+                renderProjects();
+            };
+        }
+
+        function populateSubcategories() {
+            const category = document.getElementById('project-category').value;
+            const subcategoryDropdown = document.getElementById('project-subcategory');
+            subcategoryDropdown.innerHTML = '<option value="">Select Subcategory</option>';
+            const selectedCategory = state.projectTypes.find(c => c.name === category);
+            if (selectedCategory) {
+                subcategoryDropdown.innerHTML += selectedCategory.subcategories.map(sub => `
+                    <option value="${sub}">${sub}</option>
+                `).join('');
+            }
+        }
+
+        function addNewPhase(projectId) {
+            const project = state.projectOverview.find(p => p.projectId === projectId);
+            if (!project) return;
+            const newPhase = prompt('Enter new testing phase (e.g., Dev Testing):');
+            if (newPhase) {
+                state.projectOverview.push({
+                    ...project,
+                    projectId: Date.now().toString(),
+                    currentPhase: newPhase,
+                    startDate: new Date().toISOString().split('T')[0],
+                    endDate: '',
+                    status: 'In Progress',
+                    totalBugs: 0,
+                    htmlBugs: 0,
+                    p0HtmlBugs: 0,
+                    p1HtmlBugs: 0,
+                    p2HtmlBugs: 0,
+                    p3HtmlBugs: 0,
+                    p4HtmlBugs: 0,
+                    functionalBugs: 0,
+                    p0FunctionalBugs: 0,
+                    p1FunctionalBugs: 0,
+                    p2FunctionalBugs: 0,
+                    p3FunctionalBugs: 0,
+                    p4FunctionalBugs: 0
+                });
+                logActivity(`Started new phase "${newPhase}" for project "${project.projectName}"`);
+                saveState('projectOverview', state.projectOverview);
+                filterProjects();
+            }
+        }
+
+        function updatePhase(projectId, phase) {
+            const index = state.projectOverview.findIndex(p => p.projectId === projectId);
+            if (index === -1) return;
+            state.projectOverview[index].currentPhase = phase;
+            logActivity(`Updated phase of project "${state.projectOverview[index].projectName}" to ${phase}`);
+            saveState('projectOverview', state.projectOverview);
+            showNotification('Phase updated successfully');
+            filterProjects();
+        }
+
+        function updateKT(projectId, ktReceived) {
+            const index = state.projectOverview.findIndex(p => p.projectId === projectId);
+            if (index === -1) return;
+            state.projectOverview[index].ktReceived = ktReceived;
+            logActivity(`Updated KT status of "${state.projectOverview[index].projectName}" to ${ktReceived}`);
+            saveState('projectOverview', state.projectOverview);
+            showNotification('KT status updated successfully');
+            filterProjects();
+        }
+
+        function submitForTLApproval(projectId) {
+            const index = state.projectOverview.findIndex(p => p.projectId === projectId);
+            if (index === -1) return;
+            state.projectOverview[index].tlApproval = 'Awaiting Approval';
+            
+            // Add notification for Team Leads
+            const project = state.projectOverview[index];
+            const qaMember = state.users.find(u => u.id === project.qaId);
+            const notification = {
+                id: Date.now().toString(),
+                type: 'submission',
+                projectId: projectId,
+                projectName: project.projectName,
+                qaName: qaMember ? qaMember.name : 'Unknown QA',
+                timestamp: Date.now(),
+                read: false
+            };
+            
+            // Add notification to all Team Leads
+            state.users.forEach(user => {
+                if (user.role === 'Team Lead') {
+                    if (!user.notifications) user.notifications = [];
+                    user.notifications.push(notification);
+                }
+            });
+            
+            logActivity(`Submitted project "${project.projectName}" for TL approval`);
+            saveState('projectOverview', state.projectOverview);
+            saveState('users', state.users);
+            showNotification('Project submitted for TL approval');
+            filterProjects();
+        }
+
+        function updateApproval(projectId, approvedForLive) {
+            const index = state.projectOverview.findIndex(p => p.projectId === projectId);
+            if (index === -1) return;
+            
+            const project = state.projectOverview[index];
+            const currentDate = new Date().toISOString().split('T')[0];
+            const qaMember = state.users.find(u => u.id === project.qaId);
+
+            if (approvedForLive === 'Yes') {
+                // Move all project tasks to Done
+                state.tasks.forEach(task => {
+                    if (task.projectId === projectId) {
+                        task.status = 'Done';
+                    }
+                });
+                saveState('tasks', state.tasks);
+                
+                // Add to approved projects but keep in overview
+                state.approvedProjects.push({
+                    ...project,
+                    approvedForLive: 'Yes',
+                    approvedDate: currentDate,
+                    approvedBy: state.currentUser.name
+                });
+                
+                // Update project in overview
+                state.projectOverview[index] = {
+                    ...project,
+                    approvedForLive: 'Yes',
+                    approvedDate: currentDate,
+                    approvedBy: state.currentUser.name,
+                    tlApproval: 'Approved',
+                    status: 'Completed'
+                };
+
+                // Add notification for QA member
+                if (qaMember) {
+                    const notification = {
+                        id: Date.now().toString(),
+                        type: 'approval',
+                        projectId: projectId,
+                        projectName: project.projectName,
+                        status: 'approved',
+                        timestamp: Date.now(),
+                        read: false
+                    };
+                    if (!qaMember.notifications) qaMember.notifications = [];
+                    qaMember.notifications.push(notification);
+                }
+                
+                logActivity(`Approved "${project.projectName}" for live`);
+                saveState('approvedProjects', state.approvedProjects);
+                sendEmail(project.projectId, 'Approved');
+            } else if (approvedForLive === 'Rejected') {
+                const reason = prompt('Please provide a reason for rejection:');
+                if (reason) {
+                    // Add to rejected projects but keep in overview
+                    state.rejectedProjects.push({
+                        ...project,
+                        approvedForLive: 'Rejected',
+                        rejectionDate: currentDate,
+                        rejectionReason: reason,
+                        rejectedBy: state.currentUser.name
+                    });
+                    
+                    // Update project in overview
+                    state.projectOverview[index] = {
+                        ...project,
+                        approvedForLive: 'Rejected',
+                        rejectionDate: currentDate,
+                        rejectionReason: reason,
+                        rejectedBy: state.currentUser.name,
+                        tlApproval: 'Rejected'
+                    };
+
+                    // Add notification for QA member
+                    if (qaMember) {
+                        const notification = {
+                            id: Date.now().toString(),
+                            type: 'approval',
+                            projectId: projectId,
+                            projectName: project.projectName,
+                            status: 'rejected',
+                            reason: reason,
+                            timestamp: Date.now(),
+                            read: false
+                        };
+                        if (!qaMember.notifications) qaMember.notifications = [];
+                        qaMember.notifications.push(notification);
+                    }
+                    
+                    logActivity(`Rejected "${project.projectName}" - Reason: ${reason}`);
+                    saveState('rejectedProjects', state.rejectedProjects);
+                    sendEmail(project.projectId, 'Rejected', reason);
+                } else {
+                    showNotification('Rejection reason is required', 3000, true);
+                    return;
+                }
+            } else {
+                // Just update the approval status in overview
+                state.projectOverview[index] = {
+                    ...project,
+                    approvedForLive: 'No',
+                    tlApproval: null
+                };
+                logActivity(`Reset "${project.projectName}" approval status`);
+            }
+            
+            saveState('projectOverview', state.projectOverview);
+            saveState('users', state.users);
+            filterProjects();
+            renderApprovedProjects();
+            renderRejectedProjects();
+            showNotification('Project approval status updated');
+        }
+
+        function sendEmail(projectId, status, reason = '') {
+            const project = state.projects.find(p => p.id === projectId);
+            const overview = state.projectOverview.find(p => p.projectId === projectId) || state.approvedProjects.find(p => p.projectId === projectId) || state.rejectedProjects.find(p => p.projectId === projectId);
+            const content = `
+                <form id="email-form">
+                    <div class="form-group">
+                        <label for="email-to" class="required">To</label>
+                        <input type="email" id="email-to" value="coordinator@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email-subject" class="required">Subject</label>
+                        <input type="text" id="email-subject" value="${status} - ${project.name}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email-body" class="required">Body</label>
+                        <textarea id="email-body" required>Dear Coordinator,\n\nProject "${project.name}" has been ${status.toLowerCase()}.\nTotal Bugs: ${overview.totalBugs || 0}\nTesting Time: ${overview.startDate} to ${overview.endDate || 'Ongoing'}\n${reason ? `Reason: ${reason}\n` : ''}Regards,\n${state.currentUser.name}</textarea>
+                    </div>
+                    <button type="submit" class="btn-primary">Send Email</button>
+                </form>
+            `;
+            document.getElementById('email-modal').style.display = 'flex';
+            document.getElementById('email-form').onsubmit = (e) => {
+                e.preventDefault();
+                const to = document.getElementById('email-to').value.trim();
+                const subject = document.getElementById('email-subject').value.trim();
+                const body = document.getElementById('email-body').value.trim();
+                if (!to || !subject || !body) {
+                    showNotification('All email fields are required', 3000, true);
+                    return;
+                }
+                logActivity(`Sent email for "${project.name}" - ${status}`);
+                closeModal();
+                showNotification('Email sent (simulated)');
+            };
+        }
+
+        function filterProjects() {
+            const search = document.getElementById('project-search')?.value.toLowerCase() || '';
+            const htmlSort = document.getElementById('html-sort')?.value || '';
+            const functionalSort = document.getElementById('functional-sort')?.value || '';
+            const tbody = document.getElementById('project-overview-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            
+            let filteredProjects = state.projectOverview;
+
+            // For QA Members, only show their assigned projects
+            if (state.currentUser.role === 'QA Member') {
+                filteredProjects = filteredProjects.filter(p => p.qaId === state.currentUser.id);
+            }
+
+            // Apply search filter
+            if (search) {
+                filteredProjects = filteredProjects.filter(p =>
+                    p.projectName?.toLowerCase().includes(search) ||
+                    p.projectType?.toLowerCase().includes(search) ||
+                    p.status?.toLowerCase().includes(search) ||
+                    state.users.find(u => u.id === p.qaId)?.name.toLowerCase().includes(search)
+                );
+            }
+
+            // Apply sorting
+            if (htmlSort || functionalSort) {
+                filteredProjects.sort((a, b) => {
+                    let comparison = 0;
+                    
+                    if (htmlSort) {
+                        const htmlFields = ['p0HtmlBugs', 'p1HtmlBugs', 'p2HtmlBugs', 'p3HtmlBugs', 'p4HtmlBugs'];
+                        if (htmlSort === 'low-to-high') htmlFields.reverse();
+                        
+                        for (const field of htmlFields) {
+                            comparison = (b[field] || 0) - (a[field] || 0);
+                            if (comparison !== 0) return comparison;
+                        }
+                    }
+                    
+                    if (functionalSort) {
+                        const functionalFields = ['p0FunctionalBugs', 'p1FunctionalBugs', 'p2FunctionalBugs', 'p3FunctionalBugs', 'p4FunctionalBugs'];
+                        if (functionalSort === 'low-to-high') functionalFields.reverse();
+                        
+                        for (const field of functionalFields) {
+                            comparison = (b[field] || 0) - (a[field] || 0);
+                            if (comparison !== 0) return comparison;
+                        }
+                    }
+                    
+                    return comparison;
+                });
+            }
+
+            filteredProjects.forEach(project => {
+                const qa = state.users.find(u => u.id === project.qaId);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${project.projectName}</td>
+                    <td>${project.currentPhase}</td>
+                    <td>${qa ? qa.name : 'Unassigned'}</td>
+                    <td>${project.startDate || 'Not Started'}</td>
+                    <td>${project.endDate || 'In Progress'}</td>
+                    <td>${project.status || 'Not Started'}</td>
+                    <td>
+                        <input type="number" value="${project.htmlBugs || 0}" 
+                            onclick="showBugCountModal('${project.projectId}', 'htmlBugs')" 
+                            readonly 
+                            style="cursor: pointer;"
+                            ${state.currentUser.role === 'QA Member' && project.qaId !== state.currentUser.id ? 'disabled' : ''}>
+                    </td>
+                    <td>
+                        <input type="number" value="${project.functionalBugs || 0}" 
+                            onclick="showBugCountModal('${project.projectId}', 'functionalBugs')" 
+                            readonly 
+                            style="cursor: pointer;"
+                            ${state.currentUser.role === 'QA Member' && project.qaId !== state.currentUser.id ? 'disabled' : ''}>
+                    </td>
+                    <td>
+                        ${(() => {
+                            if (state.currentUser.role === 'Team Lead' && project.tlApproval === 'Awaiting Approval') {
+                                return `
+                                    <select onchange="updateApproval('${project.projectId}', this.value)">
+                                        <option value="No">No</option>
+                                        <option value="Yes">Approve</option>
+                                        <option value="Rejected">Reject</option>
+                                    </select>
+                                `;
+                            } else if (project.tlApproval === 'Awaiting Approval') {
+                                return 'Waiting for TL Approval';
+                            } else if (project.tlApproval === 'Approved') {
+                                if (project.approvedForLive === 'Yes') {
+                                    return `Approved for Live by ${project.approvedBy || 'TL'}`;
+                                } else {
+                                    return 'Approved by TL';
+                                }
+                            } else if (project.approvedForLive === 'Rejected') {
+                                return `Rejected by ${project.rejectedBy || 'TL'}`;
+                            } else {
+                                return project.approvedForLive || 'No';
+                            }
+                        })()}
+                    </td>
+                    <td>
+                        ${(() => {
+                            if (state.currentUser.role === 'QA Member' && project.qaId === state.currentUser.id && !project.rejectionRequested) {
+                                return `<button class="btn-danger" onclick="requestProjectRejection('${project.projectId}')">Reject Project</button>`;
+                            } else if (project.rejectionRequested) {
+                                if (state.currentUser.role === 'Team Lead') {
+                                    return `
+                                        <select onchange="handleRejectionApproval('${project.projectId}', this.value)">
+                                            <option value="">Approve Rejection</option>
+                                            <option value="approve">Approve</option>
+                                            <option value="reject">Reject</option>
+                                        </select>
+                                    `;
+                                } else {
+                                    return 'Rejection Pending TL Approval';
+                                }
+                            }
+                            return '';
+                        })()}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function requestProjectRejection(projectId) {
+            const index = state.projectOverview.findIndex(p => p.projectId === projectId);
+            if (index === -1) return;
+
+            const project = state.projectOverview[index];
+            const reason = prompt('Please provide a reason for rejecting the project:');
+            if (!reason) {
+                showNotification('Rejection reason is required', 3000, true);
+                return;
+            }
+
+            // Update project status
+            state.projectOverview[index] = {
+                ...project,
+                rejectionRequested: true,
+                rejectionReason: reason,
+                rejectionRequestedBy: state.currentUser.name,
+                rejectionRequestedAt: new Date().toISOString()
+            };
+
+            // Add notification for Team Leads
+            state.users.forEach(user => {
+                if (user.role === 'Team Lead') {
+                    if (!user.notifications) user.notifications = [];
+                    user.notifications.push({
+                        id: Date.now().toString(),
+                        type: 'rejection_request',
+                        projectId: projectId,
+                        projectName: project.projectName,
+                        qaName: state.currentUser.name,
+                        reason: reason,
+                        timestamp: Date.now(),
+                        read: false
+                    });
+                }
+            });
+
+            logActivity(`Requested rejection for project "${project.projectName}"`);
+            saveState('projectOverview', state.projectOverview);
+            saveState('users', state.users);
+            showNotification('Project rejection requested');
+            filterProjects();
+        }
+
+        function handleRejectionApproval(projectId, action) {
+            const index = state.projectOverview.findIndex(p => p.projectId === projectId);
+            if (index === -1) return;
+
+            const project = state.projectOverview[index];
+            const currentDate = new Date().toISOString().split('T')[0];
+
+            if (action === 'approve') {
+                // Move all project tasks to Done
+                state.tasks.forEach(task => {
+                    if (task.projectId === projectId) {
+                        task.status = 'Done';
+                    }
+                });
+                saveState('tasks', state.tasks);
+
+                // Add to rejected projects
+                state.rejectedProjects.push({
+                    ...project,
+                    approvedForLive: 'Rejected',
+                    rejectionDate: currentDate,
+                    rejectionReason: project.rejectionReason,
+                    rejectedBy: state.currentUser.name
+                });
+
+                // Update project in overview
+                state.projectOverview[index] = {
+                    ...project,
+                    approvedForLive: 'Rejected',
+                    rejectionDate: currentDate,
+                    rejectionReason: project.rejectionReason,
+                    rejectedBy: state.currentUser.name,
+                    status: 'Completed'
+                };
+
+                // Add notification for QA member
+                const qaMember = state.users.find(u => u.id === project.qaId);
+                if (qaMember) {
+                    const notification = {
+                        id: Date.now().toString(),
+                        type: 'rejection_approved',
+                        projectId: projectId,
+                        projectName: project.projectName,
+                        reason: project.rejectionReason,
+                        timestamp: Date.now(),
+                        read: false
+                    };
+                    if (!qaMember.notifications) qaMember.notifications = [];
+                    qaMember.notifications.push(notification);
+                }
+
+                logActivity(`Approved rejection for project "${project.projectName}"`);
+                saveState('rejectedProjects', state.rejectedProjects);
+            } else if (action === 'reject') {
+                // Reset rejection request
+                state.projectOverview[index] = {
+                    ...project,
+                    rejectionRequested: false,
+                    rejectionReason: null,
+                    rejectionRequestedBy: null,
+                    rejectionRequestedAt: null
+                };
+
+                // Add notification for QA member
+                const qaMember = state.users.find(u => u.id === project.qaId);
+                if (qaMember) {
+                    const notification = {
+                        id: Date.now().toString(),
+                        type: 'rejection_rejected',
+                        projectId: projectId,
+                        projectName: project.projectName,
+                        timestamp: Date.now(),
+                        read: false
+                    };
+                    if (!qaMember.notifications) qaMember.notifications = [];
+                    qaMember.notifications.push(notification);
+                }
+
+                logActivity(`Rejected project rejection request for "${project.projectName}"`);
+            }
+
+            saveState('projectOverview', state.projectOverview);
+            saveState('users', state.users);
+            filterProjects();
+            renderRejectedProjects();
+            showNotification(action === 'approve' ? 'Project rejection approved' : 'Project rejection request rejected');
+        }
+
+        function markApprovedForLive(projectId, isApproved) {
+            const index = state.projectOverview.findIndex(p => p.projectId === projectId);
+            if (index === -1) return;
+
+            const project = state.projectOverview[index];
+            const currentDate = new Date().toISOString().split('T')[0];
+
+            if (isApproved) {
+                // Move all project tasks to Done
+                state.tasks.forEach(task => {
+                    if (task.projectId === projectId) {
+                        task.status = 'Done';
+                    }
+                });
+                saveState('tasks', state.tasks);
+                
+                // Add to approved projects
+                state.approvedProjects.push({
+                    ...project,
+                    approvedForLive: 'Yes',
+                    approvedDate: currentDate,
+                    approvedBy: state.currentUser.name
+                });
+                
+                // Update project in overview
+                state.projectOverview[index] = {
+                    ...project,
+                    approvedForLive: 'Yes',
+                    approvedDate: currentDate,
+                    approvedBy: state.currentUser.name,
+                    status: 'Completed'
+                };
+                
+                logActivity(`Marked project "${project.projectName}" as approved for live`);
+                saveState('approvedProjects', state.approvedProjects);
+            }
+            
+            saveState('projectOverview', state.projectOverview);
+            filterProjects();
+            renderApprovedProjects();
+            renderTasks();
+            showNotification(isApproved ? 'Project marked as approved for live' : 'Project approval removed');
+        }
+
+        function updateBugCount(projectId, bugType, value) {
+            const index = state.projectOverview.findIndex(p => p.projectId === projectId);
+            if (index === -1) return;
+            
+            // Convert value to number and ensure it's not negative
+            value = Math.max(0, parseInt(value) || 0);
+            
+            state.projectOverview[index][bugType] = value;
+            
+            // Update total bugs count
+            let totalBugs = 0;
+            if (bugType.includes('Html')) {
+                state.projectOverview[index].htmlBugs = 
+                    (state.projectOverview[index].p0HtmlBugs || 0) +
+                    (state.projectOverview[index].p1HtmlBugs || 0) +
+                    (state.projectOverview[index].p2HtmlBugs || 0) +
+                    (state.projectOverview[index].p3HtmlBugs || 0) +
+                    (state.projectOverview[index].p4HtmlBugs || 0);
+            } else if (bugType.includes('Functional')) {
+                state.projectOverview[index].functionalBugs = 
+                    (state.projectOverview[index].p0FunctionalBugs || 0) +
+                    (state.projectOverview[index].p1FunctionalBugs || 0) +
+                    (state.projectOverview[index].p2FunctionalBugs || 0) +
+                    (state.projectOverview[index].p3FunctionalBugs || 0) +
+                    (state.projectOverview[index].p4FunctionalBugs || 0);
+            }
+            
+            state.projectOverview[index].totalBugs = 
+                (state.projectOverview[index].htmlBugs || 0) + 
+                (state.projectOverview[index].functionalBugs || 0);
+            
+            saveState('projectOverview', state.projectOverview);
+            filterProjects(); // Refresh the table
+        }
+
+        function deleteProject(projectId) {
+            if (state.currentUser.role !== 'Admin') {
+                showNotification('Only Admins can delete projects', 3000, true);
+                return;
+            }
+            state.projects = state.projects.filter(p => p.id !== projectId);
+            state.projectOverview = state.projectOverview.filter(p => p.projectId !== projectId);
+            logActivity(`Deleted project: ${projectId}`);
+            saveState('projects', state.projects);
+            saveState('projectOverview', state.projectOverview);
+            showNotification('Project deleted successfully');
+            filterProjects();
+        }
+
+        function renderApprovedProjects() {
+            const tbody = document.getElementById('approved-projects-table');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            
+            // Only show projects that are marked as approved for live
+            let filteredProjects = state.projectOverview.filter(p => p.approvedForLive === 'Yes');
+            
+            if (state.currentUser.role === 'QA Member') {
+                filteredProjects = filteredProjects.filter(p => p.qaId === state.currentUser.id);
+            }
+            
+            filteredProjects.forEach(project => {
+                const qa = state.users.find(u => u.id === project.qaId);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${project.projectName}</td>
+                    <td>${qa ? qa.name : 'Unassigned'}</td>
+                    <td>${project.projectType}</td>
+                    <td>${project.currentPhase}</td>
+                    <td>${project.ktReceived}</td>
+                    <td>${project.startDate}</td>
+                    <td>${project.endDate || 'N/A'}</td>
+                    <td>${project.status}</td>
+                    <td>${project.approvedDate || 'N/A'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function renderRejectedProjects() {
+            const tbody = document.getElementById('rejected-projects-table');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            let filteredProjects = state.rejectedProjects;
+            if (state.currentUser.role === 'QA Member') {
+                filteredProjects = filteredProjects.filter(p => p.qaId === state.currentUser.id);
+            }
+            filteredProjects.forEach(project => {
+                const qa = state.users.find(u => u.id === project.qaId);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${project.projectName}</td>
+                    <td>${qa ? qa.name : 'Unassigned'}</td>
+                    <td>${project.projectType}</td>
+                    <td>${project.currentPhase}</td>
+                    <td>${project.ktReceived}</td>
+                    <td>${project.startDate}</td>
+                    <td>${project.endDate || 'N/A'}</td>
+                    <td>${project.status}</td>
+                    <td>${project.rejectionDate}</td>
+                    <td>${project.rejectionReason}</td>
+                    <td>${project.rejectedBy}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function showCategoryForm(categoryId = null) {
+            if (state.currentUser.role !== 'Admin' && state.currentUser.role !== 'Team Lead') {
+                showNotification('Only Admins or Team Leads can manage project types', 3000, true);
+                return;
+            }
+            const category = categoryId ? state.projectTypes.find(c => c.id === categoryId) : null;
+            const content = `
+                <form id="category-form">
+                    <div class="form-group">
+                        <label for="category-name" class="required">Category Name</label>
+                        <input type="text" id="category-name" value="${category ? category.name : ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="category-subcategories" class="required">Subcategories (comma-separated)</label>
+                        <input type="text" id="category-subcategories" value="${category ? category.subcategories.join(', ') : ''}" required>
+                    </div>
+                    <button type="submit" class="btn-primary">${category ? 'Update' : 'Add'} Category</button>
+                </form>
+            `;
+            showModal(`${category ? 'Edit' : 'Add'} Category`, content);
+            document.getElementById('category-form').onsubmit = (e) => {
+                e.preventDefault();
+                const name = document.getElementById('category-name').value.trim();
+                const subcategories = document.getElementById('category-subcategories').value.split(',').map(s => s.trim()).filter(s => s);
+                if (!name || !subcategories.length) {
+                    showNotification('Category name and at least one subcategory are required', 3000, true);
+                    return;
+                }
+                if (category) {
+                    const index = state.projectTypes.findIndex(c => c.id === categoryId);
+                    state.projectTypes[index] = { ...category, name, subcategories };
+                    logActivity(`Updated category: ${name}`);
+                } else {
+                    state.projectTypes.push({
+                        id: Date.now().toString(),
+                        name,
+                        subcategories
+                    });
+                    logActivity(`Added category: ${name}`);
+                }
+                saveState('projectTypes', state.projectTypes);
+                closeModal();
+                showNotification('Category saved successfully');
+                renderProjectTypes();
+            };
+        }
+
+        function renderProjectTypes() {
+            const list = document.getElementById('project-types-list');
+            if (!list) return;
+            list.innerHTML = state.projectTypes.map(category => `
+                <div class="list-item">
+                    <span>${category.name} (${category.subcategories.join(', ')})</span>
+                    <div>
+                        <button class="btn-primary" onclick="showCategoryForm('${category.id}')">Edit</button>
+                        <button class="btn-danger" onclick="deleteCategory('${category.id}')">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function deleteCategory(categoryId) {
+            if (state.currentUser.role !== 'Admin' && state.currentUser.role !== 'Team Lead') {
+                showNotification('Only Admins or Team Leads can delete categories', 3000, true);
+                return;
+            }
+            state.projectTypes = state.projectTypes.filter(c => c.id !== categoryId);
+            logActivity('Deleted project category');
+            saveState('projectTypes', state.projectTypes);
+            showNotification('Category deleted successfully');
+            renderProjectTypes();
+        }
+
+        function renderReports() {
+            const tbody = document.querySelector('#reports-list tbody');
+            if (!tbody) return;
+            const fromMonth = document.getElementById('report-filter-from').value;
+            const toMonth = document.getElementById('report-filter-to').value;
+            const qaFilter = document.getElementById('report-filter-qa').value;
+            tbody.innerHTML = '';
+            let filteredProjects = state.projectOverview.concat(state.approvedProjects, state.rejectedProjects);
+
+            if (fromMonth || toMonth) {
+                filteredProjects = filteredProjects.filter(p => {
+                    const startDate = new Date(p.startDate);
+                    const fromDate = fromMonth ? new Date(fromMonth + '-01') : null;
+                    const toDate = toMonth ? new Date(toMonth + '-01') : null;
+                    return (!fromDate || startDate >= fromDate) && (!toDate || startDate <= toDate);
+                });
+            }
+
+            if (qaFilter) {
+                filteredProjects = filteredProjects.filter(p => p.qaId === qaFilter);
+            }
+
+            if (state.currentUser.role === 'QA Member') {
+                filteredProjects = filteredProjects.filter(p => p.qaId === state.currentUser.id);
+            }
+
+            filteredProjects.forEach(project => {
+                const qa = state.users.find(u => u.id === project.qaId);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${project.projectName}</td>
+                    <td>${qa ? qa.name : 'Unassigned'}</td>
+                    <td>${project.projectType}</td>
+                    <td>${project.currentPhase}</td>
+                    <td>${project.status}</td>
+                    <td>${project.totalBugs || 0}</td>
+                    <td>${project.approvedForLive}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            const qaSelect = document.getElementById('report-filter-qa');
+            qaSelect.innerHTML = `<option value="">All QAs</option>` + state.users
+                .filter(u => u.role === 'QA Member')
+                .map(u => `<option value="${u.id}">${u.name}</option>`).join('');
+        }
+
+        function exportReport() {
+            const fromMonth = document.getElementById('report-filter-from').value;
+            const toMonth = document.getElementById('report-filter-to').value;
+            const qaFilter = document.getElementById('report-filter-qa').value;
+            let filteredProjects = state.projectOverview.concat(state.approvedProjects, state.rejectedProjects);
+            if (fromMonth || toMonth) {
+                filteredProjects = filteredProjects.filter(p => {
+                    const startDate = new Date(p.startDate);
+                    const fromDate = fromMonth ? new Date(fromMonth + '-01') : null;
+                    const toDate = toMonth ? new Date(toMonth + '-01') : null;
+                    return (!fromDate || startDate >= fromDate) && (!toDate || startDate <= toDate);
+                });
+            }
+            if (qaFilter) {
+                filteredProjects = filteredProjects.filter(p => p.qaId === qaFilter);
+            }
+            if (state.currentUser.role === 'QA Member') {
+                filteredProjects = filteredProjects.filter(p => p.qaId === state.currentUser.id);
+            }
+            const csv = [
+                ['Project Name', 'QA', 'Type', 'Phase', 'Status', 'Total Bugs', 'Approved?'],
+                ...filteredProjects.map(p => [
+                    p.projectName,
+                    state.users.find(u => u.id === p.qaId)?.name || 'Unassigned',
+                    p.projectType,
+                    p.currentPhase,
+                    p.status,
+                    p.totalBugs || 0,
+                    p.approvedForLive
+                ])
+            ].map(row => row.join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `qa_report_${fromMonth || 'all'}_${toMonth || 'all'}_${qaFilter || 'all'}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            logActivity('Exported QA report');
+            showNotification('Report exported successfully');
+        }
+
+        function renderActivityLog() {
+            const list = document.getElementById('activity-log-list');
+            if (!list) return;
+            list.innerHTML = state.activityLog.map(log => `
+                <div class="list-item">
+                    <span>${log.action} by ${log.user} on ${new Date(log.timestamp).toLocaleString()}</span>
+                </div>
+            `).join('');
+        }
+
+        function updateProfile(e) {
+            e.preventDefault();
+            const name = document.getElementById('profile-name').value.trim();
+            const email = document.getElementById('profile-email').value.trim();
+            const password = document.getElementById('profile-password').value.trim();
+            if (!name || !email) {
+                showNotification('Name and email are required', 3000, true);
+                return;
+            }
+            if (state.users.some(u => u.email === email && u.id !== state.currentUser.id)) {
+                showNotification('Email already exists', 3000, true);
+                return;
+            }
+            const index = state.users.findIndex(u => u.id === state.currentUser.id);
+            if (index === -1) {
+                showNotification('User not found', 3000, true);
+                return;
+            }
+            state.users[index] = {
+                ...state.users[index],
+                name,
+                email,
+                ...(password && { password })
+            };
+            state.currentUser = { ...state.users[index] };
+            saveState('users', state.users);
+            localStorage.setItem('currentUser', JSON.stringify(state.currentUser));
+            logActivity('Updated profile');
+            showNotification('Profile updated successfully');
+            updateUserAvatar();
+            setupSidebar();
+        }
+
+        function showUserForm(userId = null) {
+            if (state.currentUser.role !== 'Admin' && state.currentUser.role !== 'Team Lead') {
+                showNotification('Only Admins or Team Leads can manage users', 3000, true);
+                return;
+            }
+            
+            const user = userId ? state.users.find(u => u.id === userId) : null;
+            const content = `
+                <form id="user-form" onsubmit="handleUserFormSubmit(event, '${userId || ''}'); return false;">
+                    <div class="form-group">
+                        <label for="user-name" class="required">Name</label>
+                        <input type="text" id="user-name" value="${user ? user.name : ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="user-email" class="required">Email</label>
+                        <input type="email" id="user-email" value="${user ? user.email : ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="user-password" class="required">Password</label>
+                        <input type="password" id="user-password" ${user ? '' : 'required'}>
+                        ${user ? '<small>Leave blank to keep current password</small>' : ''}
+                    </div>
+                    <div class="form-group">
+                        <label for="user-role" class="required">Role</label>
+                        <select id="user-role" required>
+                            <option value="QA Member" ${user && user.role === 'QA Member' ? 'selected' : ''}>QA Member</option>
+                            <option value="Team Lead" ${user && user.role === 'Team Lead' ? 'selected' : ''}>Team Lead</option>
+                            <option value="Admin" ${user && user.role === 'Admin' ? 'selected' : ''}>Admin</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary">${user ? 'Update' : 'Add'} User</button>
+                </form>
+            `;
+            showModal(`${user ? 'Edit' : 'Add'} User`, content);
+        }
+
+        function handleUserFormSubmit(e, userId) {
+            e.preventDefault();
+            
+            const form = document.getElementById('user-form');
+            const name = form.querySelector('#user-name').value.trim();
+            const email = form.querySelector('#user-email').value.trim();
+            const password = form.querySelector('#user-password').value.trim();
+            const role = form.querySelector('#user-role').value;
+
+            if (!name || !email || !role) {
+                showNotification('Name, email, and role are required', 3000, true);
+                return;
+            }
+
+            if (!userId && !password) {
+                showNotification('Password is required for new users', 3000, true);
+                return;
+            }
+
+            if (state.users.some(u => u.email === email && (!userId || u.id !== userId))) {
+                showNotification('Email already exists', 3000, true);
+                return;
+            }
+
+            if (userId) {
+                const index = state.users.findIndex(u => u.id === userId);
+                if (index === -1) {
+                    showNotification('User not found', 3000, true);
+                    return;
+                }
+                state.users[index] = { 
+                    ...state.users[index], 
+                    name, 
+                    email, 
+                    role,
+                    ...(password && { password })
+                };
+                if (state.currentUser.id === userId) {
+                    state.currentUser = { ...state.users[index] };
+                    localStorage.setItem('currentUser', JSON.stringify(state.currentUser));
+                }
+                logActivity(`Updated user: ${name}`);
+                showNotification('User updated successfully');
+            } else {
+                const newUser = { 
+                    id: Date.now().toString(), 
+                    name, 
+                    email, 
+                    password, 
+                    role 
+                };
+                state.users.push(newUser);
+                logActivity(`Added user: ${name}`);
+                showNotification('User added successfully');
+            }
+            
+            saveState('users', state.users);
+            closeModal();
+            renderUsers();
+        }
+
+        function filterUsers() {
+            const search = document.getElementById('user-search').value.toLowerCase();
+            const filteredUsers = state.users.filter(user => user.name.toLowerCase().includes(search) || user.email.toLowerCase().includes(search));
+            renderUsers(filteredUsers);
+        }
+
+        function renderUsers(users = state.users) {
+            const list = document.getElementById('users-list');
+            const paginationControls = document.getElementById('pagination-controls');
+            const itemsPerPage = 5;
+            const totalPages = Math.ceil(users.length / itemsPerPage);
+            let currentPage = 1;
+
+            function renderPage(page) {
+                currentPage = page;
+                const start = (page - 1) * itemsPerPage;
+                const end = start + itemsPerPage;
+                list.innerHTML = users.slice(start, end).map(user => `
+                    <div class="list-item">
+                        <span>${user.name} (${user.email}) - ${user.role}</span>
+                        ${(state.currentUser.role === 'Admin' || state.currentUser.role === 'Team Lead') ? `
+                            <div>
+                                <button class="btn-primary" onclick="showUserForm('${user.id}')">Edit</button>
+                                <button class="btn-danger" onclick="confirmDeleteUser('${user.id}')">Delete</button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+                paginationControls.innerHTML = Array.from({ length: totalPages }, (_, i) => `
+                    <button class="btn-primary" onclick="renderPage(${i + 1})" ${i + 1 === currentPage ? 'disabled' : ''}>${i + 1}</button>
+                `).join(' ');
+            }
+
+            renderPage(1);
+        }
+
+        function confirmDeleteUser(userId) {
+            if (confirm('Are you sure you want to delete this user?')) {
+                deleteUser(userId);
+            }
+        }
+
+        function deleteUser(userId) {
+            if (state.currentUser.role !== 'Admin' && state.currentUser.role !== 'Team Lead') {
+                showNotification('Only Admins or Team Leads can delete users', 3000, true);
+                return;
+            }
+            if (state.currentUser.id === userId) {
+                showNotification('You cannot delete yourself', 3000, true);
+                return;
+            }
+            const user = state.users.find(u => u.id === userId);
+            state.users = state.users.filter(u => u.id !== userId);
+            logActivity(`Deleted user: ${user.name}`);
+            saveState('users', state.users);
+            showNotification('User deleted successfully');
+            renderUsers();
+            setupSidebar();
+        }
+
+        function renderAssignRoles() {
+            const list = document.getElementById('roles-list');
+            if (!list) return;
+            if (state.currentUser.role !== 'Admin' && state.currentUser.role !== 'Team Lead') {
+                list.innerHTML = '<p>Only Admins or Team Leads can assign roles.</p>';
+                return;
+            }
+            list.innerHTML = state.projectOverview.map(project => `
+                <div class="list-item">
+                    <span>${project.projectName} - Current QA: ${state.users.find(u => u.id === project.qaId)?.name || 'Unassigned'}</span>
+                    <div>
+                        <select onchange="assignRole('${project.projectId}', this.value)">
+                            <option value="">Unassigned</option>
+                            ${state.users.filter(u => u.role === 'QA Member').map(user => `
+                                <option value="${user.id}" ${project.qaId === user.id ? 'selected' : ''}>${user.name}</option>
+                            `).join('')}
+                        </select>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function assignRole(projectId, qaId) {
+            if (state.currentUser.role !== 'Admin' && state.currentUser.role !== 'Team Lead') {
+                showNotification('Only Admins or Team Leads can assign roles', 3000, true);
+                return;
+            }
+            const index = state.projectOverview.findIndex(p => p.projectId === projectId);
+            if (index === -1) return;
+            state.projectOverview[index].qaId = qaId;
+            logActivity(`Assigned QA ${state.users.find(u => u.id === qaId)?.name || 'Unassigned'} to project "${state.projectOverview[index].projectName}"`);
+            saveState('projectOverview', state.projectOverview);
+            showNotification('Role assigned successfully');
+            renderAssignRoles();
+            filterProjects();
+        }
+
+        function showPhaseForm(phaseId = null) {
+            if (state.currentUser.role !== 'Admin' && state.currentUser.role !== 'Team Lead') {
+                showNotification('Only Admins or Team Leads can manage phases', 3000, true);
+                return;
+            }
+            const content = `
+                <form id="phase-form">
+                    <div class="form-group">
+                        <label for="phase-name" class="required">Phase Name</label>
+                        <input type="text" id="phase-name" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Add Phase</button>
+                </form>
+            `;
+            showModal('Add Testing Phase', content);
+            document.getElementById('phase-form').onsubmit = (e) => {
+                e.preventDefault();
+                const name = document.getElementById('phase-name').value.trim();
+                if (!name) {
+                    showNotification('Phase name is required', 3000, true);
+                    return;
+                }
+                logActivity(`Added testing phase: ${name}`);
+                closeModal();
+                showNotification('Phase added successfully (Note: This is a placeholder action)');
+            };
+        }
+
+        function renderTestingPhases() {
+            const list = document.getElementById('testing-phases-list');
+            if (!list) return;
+            list.innerHTML = `
+                <div class="list-item">Not Started</div>
+                <div class="list-item">HTML Comparison</div>
+                <div class="list-item">Dev Testing</div>
+                <div class="list-item">Regression</div>
+            `;
+        }
+
+        function renderProjects() {
+            const projectsContainer = document.getElementById('projects-container');
+            if (!projectsContainer) return;
+
+            const projects = state.projects.filter(project => {
+                if (state.currentUser.role === 'QA Member') {
+                    return project.qaAssigned === state.currentUser.name;
+                }
+                return true;
+            });
+
+            projectsContainer.innerHTML = `
+                <div class="table-header">
+                    <div class="sort-controls">
+                        <select class="sort-dropdown" onchange="sortProjects('html', this.value)">
+                            <option value="">Sort HTML Bugs</option>
+                            <option value="asc">Lowest to Highest</option>
+                            <option value="desc">Highest to Lowest</option>
+                        </select>
+                        <select class="sort-dropdown" onchange="sortProjects('functional', this.value)">
+                            <option value="">Sort Functional Bugs</option>
+                            <option value="asc">Lowest to Highest</option>
+                            <option value="desc">Highest to Lowest</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="projects-table">
+                        <thead>
+                            <tr>
+                                <th>PROJECT NAME</th>
+                                <th>PHASE</th>
+                                <th>QA MEMBER</th>
+                                <th>START DATE</th>
+                                <th>END DATE</th>
+                                <th>STATUS</th>
+                                <th>HTML BUGS</th>
+                                <th>FUNCTIONAL BUGS</th>
+                                <th>ACTIONS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${projects.map(project => `
+                                <tr>
+                                    <td>${project.name}</td>
+                                    <td>${project.currentPhase}</td>
+                                    <td>${project.qaAssigned}</td>
+                                    <td>${new Date(project.startDate).toLocaleDateString()}</td>
+                                    <td>${project.endDate ? new Date(project.endDate).toLocaleDateString() : 'In Progress'}</td>
+                                    <td class="${project.status === 'Completed' ? 'status-completed' : 'status-in-progress'}">${project.status}</td>
+                                    <td>
+                                        <input type="number" class="bug-count-input" 
+                                               value="${(project.bugCounts?.html?.total || 0)}"
+                                               onclick="openBugCountModal('${project.id}')"
+                                               readonly>
+                                    </td>
+                                    <td>
+                                        <input type="number" class="bug-count-input"
+                                               value="${(project.bugCounts?.func?.total || 0)}"
+                                               onclick="openBugCountModal('${project.id}')"
+                                               readonly>
+                                    </td>
+                                    <td>
+                                        ${project.status !== 'Rejected' && state.currentUser.role === 'QA Member' ? `
+                                            <button class="reject-btn" onclick="requestProjectRejection('${project.id}')">
+                                                Reject Project
+                                            </button>
+                                        ` : project.status === 'Rejected' ? 'Rejected' : ''}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function sortProjects(type, direction) {
+            if (!direction) return;
+            
+            state.projects.sort((a, b) => {
+                const aCount = type === 'html' ? 
+                    (a.bugCounts?.html?.total || 0) : 
+                    (a.bugCounts?.func?.total || 0);
+                const bCount = type === 'html' ? 
+                    (b.bugCounts?.html?.total || 0) : 
+                    (b.bugCounts?.func?.total || 0);
+                
+                return direction === 'asc' ? aCount - bCount : bCount - aCount;
+            });
+            
+            renderProjects();
+        }
+
+        function calculateDashboardStats() {
+            const stats = {
+                'Your Stats': { projects: 0, pendingApprovals: 0, completedProjects: 0 }
+            };
+            if (state.currentUser.role === 'Admin' || state.currentUser.role === 'Team Lead') {
+                stats['Team Stats'] = { projects: 0, pendingApprovals: 0, completedProjects: 0 };
+            }
+            state.projectOverview.forEach(project => {
+                if (project.qaId === state.currentUser.id || state.currentUser.role === 'Admin' || state.currentUser.role === 'Team Lead') {
+                    stats['Your Stats'].projects++;
+                    if (project.tlApproval === 'Awaiting Approval') stats['Your Stats'].pendingApprovals++;
+                    if (project.status === 'Completed') stats['Your Stats'].completedProjects++;
+                }
+                if (stats['Team Stats']) {
+                    stats['Team Stats'].projects++;
+                    if (project.tlApproval === 'Awaiting Approval') stats['Team Stats'].pendingApprovals++;
+                    if (project.status === 'Completed') stats['Team Stats'].completedProjects++;
+                }
+            });
+            state.approvedProjects.forEach(project => {
+                if (project.qaId === state.currentUser.id || state.currentUser.role === 'Admin' || state.currentUser.role === 'Team Lead') {
+                    stats['Your Stats'].completedProjects++;
+                }
+                if (stats['Team Stats']) stats['Team Stats'].completedProjects++;
+            });
+            return stats;
+        }
+
+        function toggleSidebar() {
+            document.querySelector('.sidebar').classList.toggle('collapsed');
+        }
+
+        function addLoaderToButton(button) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'btn-loader';
+            button.parentNode.insertBefore(wrapper, button);
+            wrapper.appendChild(button);
+            
+            const loader = document.createElement('div');
+            loader.className = 'loader';
+            wrapper.appendChild(loader);
+            
+            wrapper.classList.add('loading');
+            setTimeout(() => wrapper.classList.remove('loading'), 2000); // Simulate loader for 2 seconds
+        }
+
+        document.addEventListener('submit', (e) => {
+            if (e.target.tagName === 'FORM') {
+                const button = e.target.querySelector('button[type="submit"]');
+                if (button) addLoaderToButton(button);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize state from localStorage
+            state.currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            
+            // Get all required DOM elements
+            const loginModal = document.getElementById('login-modal');
+            const container = document.querySelector('.container');
+
+            // Check login state
+            if (!state.currentUser) {
+                // Not logged in - show login modal
+                loginModal.style.display = 'flex';
+                container.style.display = 'none';
+            } else {
+                // Already logged in - show dashboard
+                loginModal.style.display = 'none';
+                container.style.display = 'flex';
+                
+                // Initialize UI
+                document.getElementById('welcome-user').textContent = state.currentUser.name;
+                document.getElementById('user-name').textContent = state.currentUser.name;
+                updateUserAvatar();
+                setupSidebar();
+                renderAll();
+                switchTab('dashboard');
+            }
+
+            // Set up event listeners
+            document.getElementById('login-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                login(e);
+            });
+
+            document.getElementById('logout-btn').addEventListener('click', (e) => {
+                e.preventDefault();
+                logout();
+            });
+
+            document.getElementById('theme-toggle').addEventListener('click', () => {
+                document.body.classList.toggle('light-theme');
+                logActivity('Toggled theme');
+            });
+
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const tab = item.getAttribute('data-tab');
+                    if (tab) {
+                        switchTab(tab);
+                    }
+                });
+            });
+
+            document.querySelector('.sidebar-toggle').addEventListener('click', toggleSidebar);
+
+            if (document.getElementById('standup-form')) {
+                document.getElementById('standup-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    submitStandup(e);
+                });
+            }
+
+            if (document.getElementById('profile-form')) {
+                document.getElementById('profile-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    updateProfile(e);
+                });
+            }
+        });
+
+        function setupSidebar() {
+            // Hide restricted items based on user role
+            const sidebarItems = document.querySelectorAll('.sidebar-item');
+            sidebarItems.forEach(item => {
+                const tab = item.getAttribute('data-tab');
+                if (state.currentUser.role === 'QA Member') {
+                    if (['user-management', 'assign-roles', 'project-types'].includes(tab)) {
+                        item.style.display = 'none';
+                    }
+                }
+            });
+
+            // Update user info
+            document.getElementById('user-name').textContent = state.currentUser.name;
+            updateUserAvatar();
+        }
+
+        function updateUserAvatar() {
+            const avatar = document.getElementById('user-avatar');
+            if (avatar && state.currentUser) {
+                avatar.textContent = state.currentUser.name.charAt(0).toUpperCase();
+            }
+        }
+
+        function renderAll() {
+            // Render all components
+            renderDashboard();
+            renderStandup();
+            renderTasks();
+            renderProjects();
+            filterProjects();
+            renderApprovedProjects();
+            renderRejectedProjects();
+            renderProjectTypes();
+            renderReports();
+            renderActivityLog();
+            renderUsers();
+            renderAssignRoles();
+            renderTestingPhases();
+            displayNotifications();
+        }
+
+        function renderDashboard() {
+            const stats = calculateDashboardStats();
+            const dashboardContent = document.getElementById('dashboard-content');
+            if (!dashboardContent) return;
+
+            dashboardContent.innerHTML = '';
+            Object.entries(stats).forEach(([category, data]) => {
+                const widget = document.createElement('div');
+                widget.className = 'widget';
+                widget.innerHTML = `
+                    <h3>${category}</h3>
+                    <div class="stats">
+                        <div>
+                            <div class="stats-number ${data.projects === 0 ? 'zero' : 'active'}">${data.projects}</div>
+                            <div class="stats-label">Active Projects</div>
+                        </div>
+                        <div>
+                            <div class="stats-number ${data.pendingApprovals === 0 ? 'zero' : 'pending'}">${data.pendingApprovals}</div>
+                            <div class="stats-label">Pending Approvals</div>
+                        </div>
+                        <div>
+                            <div class="stats-number ${data.completedProjects === 0 ? 'zero' : 'completed'}">${data.completedProjects}</div>
+                            <div class="stats-label">Completed Projects</div>
+                        </div>
+                    </div>
+                `;
+                dashboardContent.appendChild(widget);
+            });
+
+            // Show/hide add project button based on role
+            const addProjectBtn = document.getElementById('add-project-btn');
+            if (addProjectBtn) {
+                addProjectBtn.style.display = state.currentUser.role !== 'QA Member' ? 'inline-block' : 'none';
+            }
+        }
+
+        function switchTab(tab) {
+            // Update active tab in sidebar
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.classList.toggle('active', item.getAttribute('data-tab') === tab);
+            });
+
+            // Show selected tab content
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.toggle('active', pane.id === tab);
+            });
+
+            // Update breadcrumbs
+            const breadcrumbs = document.getElementById('breadcrumbs');
+            if (breadcrumbs) {
+                breadcrumbs.innerHTML = `
+                    <a onclick="switchTab('dashboard')">Dashboard</a> / 
+                    ${tab.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                `;
+            }
+        }
+
+        function showNotification(message, duration = 3000, isError = false) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification${isError ? ' error-notification' : ''}`;
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, duration);
+        }
+
+        function showModal(title, content) {
+            const modal = document.getElementById('modal');
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-body').innerHTML = content;
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+            document.getElementById('email-modal').style.display = 'none';
+        }
+
+        function closeLoginModal() {
+            document.getElementById('login-modal').style.display = 'none';
+        }
+
+        // Add notification display function
+        function displayNotifications() {
+            const notifications = state.currentUser.notifications || [];
+            const unreadCount = notifications.filter(n => !n.read).length;
+            
+            // Update notification badge in header
+            const notificationBadge = document.getElementById('notification-badge');
+            if (notificationBadge) {
+                notificationBadge.textContent = unreadCount;
+                notificationBadge.style.display = unreadCount > 0 ? 'block' : 'none';
+            }
+            
+            // Display notifications in dropdown
+            const notificationDropdown = document.getElementById('notification-dropdown');
+            if (notificationDropdown) {
+                notificationDropdown.innerHTML = notifications.length > 0 ? notifications.map(notification => `
+                    <div class="notification-item ${notification.read ? 'read' : 'unread'}" onclick="showNotificationDetails('${notification.id}')">
+                        ${notification.type === 'submission' ? `
+                            <div class="title">New Project Submission</div>
+                            <div class="content">Project "${notification.projectName}" has been submitted by ${notification.qaName}</div>
+                            <div class="timestamp">${new Date(notification.timestamp).toLocaleString()}</div>
+                        ` : notification.type === 'approval' ? `
+                            <div class="title">Project ${notification.status.charAt(0).toUpperCase() + notification.status.slice(1)}</div>
+                            <div class="content">Project "${notification.projectName}" has been ${notification.status}</div>
+                            ${notification.reason ? `<div class="content">Reason: ${notification.reason}</div>` : ''}
+                            <div class="timestamp">${new Date(notification.timestamp).toLocaleString()}</div>
+                        ` : notification.type === 'rejection_request' ? `
+                            <div class="title">Project Rejection Request</div>
+                            <div class="content">Project "${notification.projectName}" has been requested for rejection by ${notification.qaName}</div>
+                            <div class="content">Reason: ${notification.reason}</div>
+                            <div class="timestamp">${new Date(notification.timestamp).toLocaleString()}</div>
+                        ` : notification.type === 'rejection_approved' ? `
+                            <div class="title">Project Rejection Approved</div>
+                            <div class="content">Your rejection request for project "${notification.projectName}" has been approved</div>
+                            <div class="content">Reason: ${notification.reason}</div>
+                            <div class="timestamp">${new Date(notification.timestamp).toLocaleString()}</div>
+                        ` : notification.type === 'rejection_rejected' ? `
+                            <div class="title">Project Rejection Rejected</div>
+                            <div class="content">Your rejection request for project "${notification.projectName}" has been rejected</div>
+                            <div class="timestamp">${new Date(notification.timestamp).toLocaleString()}</div>
+                        ` : ''}
+                    </div>
+                `).join('') : '<div class="notification-item">No notifications</div>';
+            }
+        }
+
+        function showNotificationDetails(notificationId) {
+            const notification = state.currentUser.notifications.find(n => n.id === notificationId);
+            if (!notification) return;
+
+            // Mark notification as read
+            notification.read = true;
+            
+            // Update the users array with the current user's updated notifications
+            const userIndex = state.users.findIndex(u => u.id === state.currentUser.id);
+            if (userIndex !== -1) {
+                state.users[userIndex].notifications = state.currentUser.notifications;
+            }
+            
+            // Save to localStorage and update display
+            saveState('users', state.users);
+            displayNotifications();
+
+            // Show notification details in modal
+            const details = document.getElementById('notification-details');
+            let content = '';
+
+            if (notification.type === 'submission') {
+                content = `
+                    <div class="header">New Project Submission</div>
+                    <div class="content">
+                        <p><strong>Project:</strong> ${notification.projectName}</p>
+                        <p><strong>Submitted by:</strong> ${notification.qaName}</p>
+                        <p><strong>Status:</strong> Awaiting Approval</p>
+                    </div>
+                `;
+            } else if (notification.type === 'approval') {
+                content = `
+                    <div class="header">Project ${notification.status.charAt(0).toUpperCase() + notification.status.slice(1)}</div>
+                    <div class="content">
+                        <p><strong>Project:</strong> ${notification.projectName}</p>
+                        <p><strong>Status:</strong> ${notification.status.charAt(0).toUpperCase() + notification.status.slice(1)}</p>
+                        ${notification.reason ? `<p><strong>Reason:</strong> ${notification.reason}</p>` : ''}
+                    </div>
+                `;
+            } else if (notification.type === 'rejection_request') {
+                content = `
+                    <div class="header">Project Rejection Request</div>
+                    <div class="content">
+                        <p><strong>Project:</strong> ${notification.projectName}</p>
+                        <p><strong>Requested by:</strong> ${notification.qaName}</p>
+                        <p><strong>Reason:</strong> ${notification.reason}</p>
+                    </div>
+                `;
+            } else if (notification.type === 'rejection_approved') {
+                content = `
+                    <div class="header">Project Rejection Approved</div>
+                    <div class="content">
+                        <p><strong>Project:</strong> ${notification.projectName}</p>
+                        <p><strong>Status:</strong> Rejection Approved</p>
+                        <p><strong>Reason:</strong> ${notification.reason}</p>
+                    </div>
+                `;
+            } else if (notification.type === 'rejection_rejected') {
+                content = `
+                    <div class="header">Project Rejection Rejected</div>
+                    <div class="content">
+                        <p><strong>Project:</strong> ${notification.projectName}</p>
+                        <p><strong>Status:</strong> Rejection Request Rejected</p>
+                    </div>
+                `;
+            }
+
+            content += `
+                <div class="timestamp">
+                    Received on: ${new Date(notification.timestamp).toLocaleString()}
+                </div>
+                <div class="actions">
+                    <button class="btn-primary" onclick="closeNotificationModal()">Close</button>
+                </div>
+            `;
+
+            details.innerHTML = content;
+            document.getElementById('notification-modal').style.display = 'flex';
+        }
+
+        function closeNotificationModal() {
+            document.getElementById('notification-modal').style.display = 'none';
+        }
+
+        // Update the click outside handler to include the notification modal
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('notification-dropdown');
+            const notificationBtn = document.getElementById('notification-btn');
+            const notificationModal = document.getElementById('notification-modal');
+            const modalContent = notificationModal?.querySelector('.modal-content');
+
+            if (dropdown && notificationBtn && !notificationBtn.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.style.display = 'none';
+            }
+
+            if (notificationModal && modalContent && !modalContent.contains(e.target)) {
+                closeNotificationModal();
+            }
+        });
+
+        function toggleNotifications() {
+            const dropdown = document.getElementById('notification-dropdown');
+            const notificationBadge = document.getElementById('notification-badge');
+            if (dropdown) {
+                dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+                
+                // When opening the dropdown, mark all notifications as read
+                if (dropdown.style.display === 'block') {
+                    // Mark all notifications as read
+                    if (state.currentUser.notifications) {
+                        state.currentUser.notifications.forEach(notification => {
+                            notification.read = true;
+                        });
+                        
+                        // Update the users array with the current user's updated notifications
+                        const userIndex = state.users.findIndex(u => u.id === state.currentUser.id);
+                        if (userIndex !== -1) {
+                            state.users[userIndex].notifications = state.currentUser.notifications;
+                        }
+                        
+                        // Save to localStorage
+                        saveState('users', state.users);
+                        
+                        // Hide the notification badge
+                        if (notificationBadge) {
+                            notificationBadge.style.display = 'none';
+                        }
+                        
+                        // Re-render notifications
+                        displayNotifications();
+                    }
+                }
+            }
+        }
+
+        let currentProjectId = null;
+
+        function openBugCountModal(projectId) {
+            currentProjectId = projectId;
+            const project = state.projects.find(p => p.id === projectId);
+            
+            // Initialize bug counts if they don't exist
+            if (!project.bugCounts) {
+                project.bugCounts = {
+                    html: { p0: 0, p1: 0, p2: 0, p3: 0, p4: 0, total: 0 },
+                    func: { p0: 0, p1: 0, p2: 0, p3: 0, p4: 0, total: 0 }
+                };
+            }
+
+            // Set values in the modal
+            ['html', 'func'].forEach(type => {
+                ['p0', 'p1', 'p2', 'p3', 'p4'].forEach(priority => {
+                    const input = document.getElementById(`${type}-${priority}`);
+                    if (input) {
+                        input.value = project.bugCounts[type][priority] || 0;
+                    }
+                });
+            });
+
+            updateBugTotals();
+            document.getElementById('bug-count-modal').style.display = 'flex';
+        }
+
+        function closeBugCountModal() {
+            document.getElementById('bug-count-modal').style.display = 'none';
+            currentProjectId = null;
+        }
+
+        function updateBugTotals() {
+            ['html', 'func'].forEach(type => {
+                let total = 0;
+                ['p0', 'p1', 'p2', 'p3', 'p4'].forEach(priority => {
+                    const value = parseInt(document.getElementById(`${type}-${priority}`).value) || 0;
+                    total += value;
+                });
+                document.getElementById(`${type}-total`).textContent = total;
+            });
+        }
+
+        function saveBugCounts() {
+            if (!currentProjectId) return;
+
+            const project = state.projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+
+            // Save bug counts
+            project.bugCounts = {
+                html: {
+                    p0: parseInt(document.getElementById('html-p0').value) || 0,
+                    p1: parseInt(document.getElementById('html-p1').value) || 0,
+                    p2: parseInt(document.getElementById('html-p2').value) || 0,
+                    p3: parseInt(document.getElementById('html-p3').value) || 0,
+                    p4: parseInt(document.getElementById('html-p4').value) || 0
+                },
+                func: {
+                    p0: parseInt(document.getElementById('func-p0').value) || 0,
+                    p1: parseInt(document.getElementById('func-p1').value) || 0,
+                    p2: parseInt(document.getElementById('func-p2').value) || 0,
+                    p3: parseInt(document.getElementById('func-p3').value) || 0,
+                    p4: parseInt(document.getElementById('func-p4').value) || 0
+                }
+            };
+
+            // Calculate totals
+            project.bugCounts.html.total = Object.values(project.bugCounts.html)
+                .reduce((sum, count) => sum + (count || 0), 0);
+            project.bugCounts.func.total = Object.values(project.bugCounts.func)
+                .reduce((sum, count) => sum + (count || 0), 0);
+
+            // Update total bugs
+            project.totalBugs = project.bugCounts.html.total + project.bugCounts.func.total;
+
+            // Save to state and update display
+            saveState('projects', state.projects);
+            renderProjects();
+            document.getElementById('bug-count-modal').style.display = 'none';
+            currentProjectId = null;
+        }
+
+        // Add event listeners for input changes
+        document.addEventListener('DOMContentLoaded', function() {
+            ['html', 'func'].forEach(type => {
+                ['p0', 'p1', 'p2', 'p3', 'p4'].forEach(priority => {
+                    const input = document.getElementById(`${type}-${priority}`);
+                    if (input) {
+                        input.addEventListener('input', updateBugTotals);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
