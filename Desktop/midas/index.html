@@ -41,6 +41,9 @@
             font-family: var(--font-body);
             word-wrap: break-word;
             overflow-wrap: break-word;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
         }
 
         h1,
@@ -107,40 +110,46 @@
 
         .breadcrumb {
             font-size: 14px;
-            font-weight: 500;
-            color: #ffffff;
+            font-weight: 600;
+            color: #1c6938; /* SOHOOL Green */
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 10px;
+            gap: 15px;
             text-transform: none;
             letter-spacing: 0.5px;
             margin-top: 20px;
-            text-decoration: none;
         }
 
-        .breadcrumb a {
-            color: #ffffff;
-            text-decoration: none;
-            opacity: 0.8;
-            transition: 0.3s;
-        }
-
-        .breadcrumb a:hover {
-            opacity: 1;
-            color: var(--accent);
+        .breadcrumb::before,
+        .breadcrumb::after {
+            content: "";
+            width: 30px;
+            height: 1px;
+            background: #1c6938;
+            opacity: 0.5;
         }
 
         /* Site Header */
         .site-header {
-            position: sticky;
+            position: fixed;
             top: 0;
+            left: 0;
             width: 100%;
             z-index: 1000;
-            background: rgba(10, 15, 20, 0.95);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 15px 0;
+            background: transparent;
+            padding: 20px 0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-bottom: 1px solid transparent;
+        }
+
+        .site-header.scrolled {
+            background: rgba(8, 18, 35, 0.75);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
         }
 
         .header-content {
@@ -150,7 +159,7 @@
         }
 
         .logo img {
-            height: 50px;
+            height: 44px;
             width: auto;
             display: block;
         }
@@ -158,7 +167,7 @@
         .nav-menu {
             list-style: none;
             display: flex;
-            gap: 30px;
+            gap: 25px;
             margin: 0;
             padding: 0;
         }
@@ -166,29 +175,31 @@
         .nav-menu a {
             text-decoration: none;
             color: #ffffff;
-            font-size: 13px;
-            font-weight: 600;
+            font-size: 14px;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
             transition: 0.3s;
             font-family: var(--font-head);
+            opacity: 0.9;
         }
 
         .nav-menu a:hover {
-            color: var(--accent);
+            color: #ffffff;
+            opacity: 1;
         }
 
         .download-btn {
-            background: #1c6938; /* Industrial Green */
+            background: #1c6938;
             color: #ffffff;
             text-decoration: none;
-            padding: 12px 24px;
+            padding: 10px 20px;
             border-radius: 4px;
-            font-weight: 600;
+            font-weight: 700;
             font-size: 14px;
             display: inline-flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             transition: 0.3s;
         }
 
@@ -220,6 +231,8 @@
             font-family: var(--font-body);
             position: relative;
             overflow: hidden;
+            width: 100%;
+            margin-bottom: 0;
         }
 
         .site-footer::after {
@@ -337,7 +350,7 @@
         }
 
         .footer-bottom {
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(0, 0, 0, 0.4);
             padding: 25px 0;
             border-top: 1px solid rgba(255, 255, 255, 0.05);
             text-align: center;
@@ -345,6 +358,7 @@
             color: rgba(255, 255, 255, 0.5);
             position: relative;
             z-index: 2;
+            width: 100%;
         }
 
         .footer-bottom a {
@@ -442,7 +456,7 @@
             padding: clamp(30px, 5vw, 60px);
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
-            margin: -80px auto 60px;
+            margin: 10px auto;
             position: relative;
             z-index: 10;
             border: 1px solid rgba(0, 0, 0, 0.05);
@@ -574,13 +588,13 @@
         /* Sticky Navigation */
         .sticky-nav-container {
             position: sticky;
-            top: 0;
+            top: 75px; /* Height of site-header */
             background: rgba(255, 255, 255, 0.98);
             z-index: 100;
             backdrop-filter: blur(10px);
             border-bottom: 1px solid var(--border);
             padding: 15px 0;
-            margin-bottom: 60px;
+            margin-bottom: 0;
         }
 
         .sticky-nav {
@@ -635,8 +649,8 @@
 
         /* Sections */
         section {
-            padding: 80px 0;
-            scroll-margin-top: 100px;
+            padding: 40px 0;
+            scroll-margin-top: 150px;
         }
 
         section:nth-child(even) {
@@ -1233,7 +1247,7 @@
             <ul class="nav-menu">
                 <li><a href="index.html">Home</a></li>
                 <li><a href="#">About Us</a></li>
-                <li><a href="#">Strength</a></li>
+                <li><a href="#">Strenght</a></li>
                 <li><a href="#">Sectors</a></li>
                 <li><a href="#">Projects</a></li>
                 <li><a href="#">Clients</a></li>
@@ -1279,8 +1293,8 @@
         </div>
 
         <div class="container banner-content">
-            <h1>AAC Wall Panels, <br>The future is here</h1>
-            <div class="breadcrumb"><a href="index.html">Home</a> / Our Products</div>
+            <h1>AAC Wall Panels, The future is here</h1>
+            <div class="breadcrumb">Home / Our Products</div>
         </div>
     </section>
 
@@ -2105,13 +2119,30 @@
 
         const backToTop = document.getElementById('backToTop');
         const header = document.querySelector('.site-header');
+        const stickyNavContainer = document.querySelector('.sticky-nav-container');
 
         window.addEventListener('scroll', () => {
+            const scrollY = window.scrollY;
+
+            // Header glassmorphism toggle
+            if (scrollY > 50) {
+                header.classList.add('scrolled');
+                if (stickyNavContainer) {
+                    stickyNavContainer.style.top = header.offsetHeight + 'px';
+                }
+            } else {
+                header.classList.remove('scrolled');
+                if (stickyNavContainer) {
+                    stickyNavContainer.style.top = header.offsetHeight + 'px';
+                }
+            }
+
             // Section highlighter
             let current = '';
             sections.forEach(section => {
                 const sectionTop = section.offsetTop;
-                if (scrollY >= (sectionTop - 150)) {
+                const headerOffset = header.offsetHeight + (stickyNavContainer ? stickyNavContainer.offsetHeight : 0);
+                if (scrollY >= (sectionTop - headerOffset - 20)) {
                     current = section.getAttribute('id');
                 }
             });
@@ -2133,7 +2164,7 @@
             }
 
             // Back to Top visibility
-            if (window.scrollY > 300) {
+            if (scrollY > 300) {
                 backToTop.classList.add('show');
             } else {
                 backToTop.classList.remove('show');
